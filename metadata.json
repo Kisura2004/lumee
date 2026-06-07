@@ -1,0 +1,6 @@
+{
+  "name": "Lumee",
+  "description": "A quiet daily companion for morning warmth, reflections, and hopeful moments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
