@@ -82,10 +82,16 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun saveMoment(content: String, usePrompt: Boolean) {
+    fun saveMoment(
+        content: String,
+        usePrompt: Boolean,
+        imageUri: String? = null,
+        videoUri: String? = null,
+        audioUri: String? = null
+    ) {
         viewModelScope.launch {
             val promptText = if (usePrompt) _currentPrompt.value else null
-            repository.saveMoment(content, promptText)
+            repository.saveMoment(content, promptText, imageUri, videoUri, audioUri)
             nextPrompt() // Cycle prompt after successful save
         }
     }

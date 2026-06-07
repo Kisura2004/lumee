@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,8 +31,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.shape.CircleShape
 import com.example.ui.LumeeViewModel
 import java.util.Calendar
+
+enum class BreathingPhase { IDLE, INHALE, HOLD_IN, EXHALE, HOLD_OUT }
+
+enum class BreathingTechnique(
+    val title: String,
+    val description: String,
+    val inhaleMs: Long,
+    val holdInMs: Long,
+    val exhaleMs: Long,
+    val holdOutMs: Long,
+    val inhaleSec: Int,
+    val holdInSec: Int,
+    val exhaleSec: Int,
+    val holdOutSec: Int
+) {
+    BOX("Box Breath", "Cognitive clarity & sharp focus", 4000, 4000, 4000, 4000, 4, 4, 4, 4),
+    CALM("4-7-8 Relax", "Nervous system reset & stress relief", 4000, 7000, 8000, 0, 4, 7, 8, 0),
+    COHERENT("Balanced", "Settle heart rhythm & balance mood", 5000, 0, 5000, 0, 5, 0, 5, 0)
+}
 
 @Composable
 fun GreetingScreen(
@@ -212,20 +234,296 @@ fun GreetingScreen(
                         color = Color(0xFF3D3834).copy(alpha = 0.5f)
                     )
 
-                    // Refresh Button (Quiet & Soft)
-                    IconButton(
-                        onClick = { viewModel.refreshTodayGreeting(force = true) },
-                        modifier = Modifier
-                            .testTag("refresh_greeting_button")
-                            .size(36.dp)
+                    // Actions Row
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh Greeting",
-                            tint = Color(0xFF3D3834).copy(alpha = 0.4f),
-                            modifier = Modifier.size(20.dp)
-                        )
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        // Copy Button
+                        IconButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("Lumee Contemplation", greetingText)
+                                clipboard.setPrimaryClip(clip)
+                                android.widget.Toast.makeText(context, "Copied quote to clipboard ✨", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .testTag("copy_greeting_button")
+                                .size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = "Copy Contemplation",
+                                tint = Color(0xFF3D3834).copy(alpha = 0.4f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        // Refresh Button (Quiet & Soft)
+                        IconButton(
+                            onClick = { viewModel.refreshTodayGreeting(force = true) },
+                            modifier = Modifier
+                                .testTag("refresh_greeting_button")
+                                .size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh Greeting",
+                                tint = Color(0xFF3D3834).copy(alpha = 0.4f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
+                }
+            }
+        }
+
+        // Aesthetic Dynamic Breathing Companion
+        var isBreathingActive by remember { mutableStateOf(false) }
+        var breathingPhase by remember { mutableStateOf(BreathingPhase.IDLE) }
+        var selectedTechnique by remember { mutableStateOf(BreathingTechnique.BOX) }
+        var secondsRemaining by remember { mutableStateOf(0) }
+
+        LaunchedEffect(isBreathingActive, selectedTechnique) {
+            if (!isBreathingActive) {
+                breathingPhase = BreathingPhase.IDLE
+                secondsRemaining = 0
+                return@LaunchedEffect
+            }
+            while (true) {
+                // Inhale phase
+                breathingPhase = BreathingPhase.INHALE
+                for (s in selectedTechnique.inhaleSec downTo 1) {
+                    secondsRemaining = s
+                    kotlinx.coroutines.delay(1000)
+                }
+
+                // Hold In phase
+                if (selectedTechnique.holdInSec > 0) {
+                    breathingPhase = BreathingPhase.HOLD_IN
+                    for (s in selectedTechnique.holdInSec downTo 1) {
+                        secondsRemaining = s
+                        kotlinx.coroutines.delay(1000)
+                    }
+                }
+
+                // Exhale phase
+                breathingPhase = BreathingPhase.EXHALE
+                for (s in selectedTechnique.exhaleSec downTo 1) {
+                    secondsRemaining = s
+                    kotlinx.coroutines.delay(1000)
+                }
+
+                // Hold Out phase
+                if (selectedTechnique.holdOutSec > 0) {
+                    breathingPhase = BreathingPhase.HOLD_OUT
+                    for (s in selectedTechnique.holdOutSec downTo 1) {
+                        secondsRemaining = s
+                        kotlinx.coroutines.delay(1000)
+                    }
+                }
+            }
+        }
+
+        val scaleTarget = when (breathingPhase) {
+            BreathingPhase.IDLE -> 1.0f
+            BreathingPhase.INHALE -> 1.7f
+            BreathingPhase.HOLD_IN -> 1.7f
+            BreathingPhase.EXHALE -> 1.0f
+            BreathingPhase.HOLD_OUT -> 1.0f
+        }
+        val textLabel = when (breathingPhase) {
+            BreathingPhase.IDLE -> "Begin"
+            BreathingPhase.INHALE -> "Breathe In"
+            BreathingPhase.HOLD_IN -> "Hold"
+            BreathingPhase.EXHALE -> "Breathe Out"
+            BreathingPhase.HOLD_OUT -> "Rest"
+        }
+        val durationMillisValue = when (breathingPhase) {
+            BreathingPhase.INHALE -> selectedTechnique.inhaleMs.toInt()
+            BreathingPhase.EXHALE -> selectedTechnique.exhaleMs.toInt()
+            else -> 1000
+        }
+        val animatedScale by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = scaleTarget,
+            animationSpec = androidx.compose.animation.core.tween(
+                durationMillis = durationMillisValue,
+                easing = androidx.compose.animation.core.LinearEasing
+            ),
+            label = "BreathingScale"
+        )
+
+        val colorTarget = when (breathingPhase) {
+            BreathingPhase.IDLE -> Color(0xFFE0A7A7).copy(alpha = 0.15f)
+            BreathingPhase.INHALE -> Color(0xFFFEF3C7).copy(alpha = 0.4f)  // Sunbeam Amber
+            BreathingPhase.HOLD_IN -> Color(0xFF90CAF9).copy(alpha = 0.35f) // Deep sky blue
+            BreathingPhase.EXHALE -> Color(0xFFC084FC).copy(alpha = 0.35f) // Evening Lavender
+            BreathingPhase.HOLD_OUT -> Color(0xFFE0A7A7).copy(alpha = 0.2f)
+        }
+        val animatedColor by androidx.compose.animation.animateColorAsState(
+            targetValue = colorTarget,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 1000),
+            label = "BreathingColor"
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color.White.copy(alpha = 0.25f))
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .padding(24.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header with subtitle
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = "LUMEE BREATH SPACE",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        color = Color(0xFFE0A7A7)
+                    )
+                    Text(
+                        text = "Calm your mind using ${selectedTechnique.title}.",
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFF3D3834).copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = selectedTechnique.description,
+                        fontSize = 10.sp,
+                        fontStyle = FontStyle.Italic,
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFF3D3834).copy(alpha = 0.4f)
+                    )
+                }
+
+                // Technique Selector Chips
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BreathingTechnique.values().forEach { tech ->
+                        val isSelected = selectedTechnique == tech
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isSelected) Color(0xFFE0A7A7).copy(alpha = 0.25f)
+                                    else Color.White.copy(alpha = 0.15f)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) Color(0xFFE0A7A7) else Color.White.copy(alpha = 0.4f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable {
+                                    selectedTechnique = tech
+                                    isBreathingActive = false
+                                    breathingPhase = BreathingPhase.IDLE
+                                    secondsRemaining = 0
+                                }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = tech.title,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color(0xFF8B5A5A) else Color(0xFF3D3834)
+                                )
+                                Text(
+                                    text = "${tech.inhaleSec}-${tech.holdInSec}-${tech.exhaleSec}${if (tech.holdOutSec > 0) "-${tech.holdOutSec}" else ""}",
+                                    fontSize = 9.sp,
+                                    color = if (isSelected) Color(0xFF8B5A5A).copy(alpha = 0.7f) else Color(0xFF3D3834).copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Breathing Sphere Container
+                Box(
+                    modifier = Modifier
+                        .size(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Pulsing Glow sphere
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .graphicsLayer {
+                                scaleX = animatedScale
+                                scaleY = animatedScale
+                            }
+                            .clip(CircleShape)
+                            .background(animatedColor)
+                            .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
+                    )
+
+                    // Outer border guideline
+                    Box(
+                        modifier = Modifier
+                            .size(119.dp)
+                            .border(0.75.dp, Color.White.copy(alpha = 0.35f), CircleShape)
+                    )
+
+                    // Phase Text Label inside bubble
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = textLabel,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF3D3834),
+                            textAlign = TextAlign.Center
+                        )
+                        if (isBreathingActive && secondsRemaining > 0) {
+                            Text(
+                                text = "${secondsRemaining}s",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF3D3834).copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                }
+
+                // Start/Pause Button
+                Button(
+                    onClick = { isBreathingActive = !isBreathingActive },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isBreathingActive) Color(0xFF3D3834).copy(alpha = 0.1f) else Color(0xFFE0A7A7),
+                        contentColor = if (isBreathingActive) Color(0xFF3D3834) else Color.White
+                    ),
+                    modifier = Modifier
+                        .height(44.dp)
+                        .testTag("toggle_breathing_button")
+                ) {
+                    Text(
+                        text = if (isBreathingActive) "Pause Exercise" else "Begin ${selectedTechnique.title}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
                 }
             }
         }

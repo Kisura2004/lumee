@@ -205,12 +205,17 @@ object GreetingProvider {
 
         val normalizedIndex = index.coerceIn(0, TOTAL_GENERATIVE_QUOTES - 1)
 
-        val sIdx = normalizedIndex % subjects.size
-        val aIdx = (normalizedIndex / subjects.size) % actions.size
-        val oIdx = (normalizedIndex / (subjects.size * actions.size)) % objects.size
-        val tIdx = (normalizedIndex / (subjects.size * actions.size * objects.size)) % transitions.size
-        val auIdx = (normalizedIndex / (subjects.size * actions.size * objects.size * transitions.size)) % authors.size
-        val cIdx = (normalizedIndex * 7) % categories.size
+        // Use a high-quality coprimality multiplier to scramble the sequential index.
+        // This scrambles the index deterministically across the entire 40,000 space
+        // so that consecutive IDs look completely randomized, diverse, and never repetitive in the browser.
+        val scrambledIndex = (normalizedIndex * 13789 + 54321) % TOTAL_GENERATIVE_QUOTES
+
+        val sIdx = scrambledIndex % subjects.size
+        val aIdx = (scrambledIndex / subjects.size) % actions.size
+        val oIdx = (scrambledIndex / (subjects.size * actions.size)) % objects.size
+        val tIdx = (scrambledIndex / (subjects.size * actions.size * objects.size)) % transitions.size
+        val auIdx = (scrambledIndex / (subjects.size * actions.size * objects.size * transitions.size)) % authors.size
+        val cIdx = (scrambledIndex * 7) % categories.size
 
         val subject = subjects[sIdx]
         val action = actions[aIdx]

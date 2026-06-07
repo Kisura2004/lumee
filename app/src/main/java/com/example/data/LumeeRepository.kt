@@ -69,62 +69,49 @@ class LumeeRepository(private val dao: LumeeDao) {
             )
         }
 
-        // Rule: After 11:00 AM, full greetings are never shown.
-        // Tone shifts to shorter supportive messages.
-        if (currentHour >= 11) {
-            val text = if (forceRefresh) {
-                GreetingProvider.afternoonGreetings.random()
-            } else {
-                val index = Math.abs(todayStr.hashCode()) % GreetingProvider.afternoonGreetings.size
-                GreetingProvider.afternoonGreetings[index]
+        // Determine category / time of day header
+        val timeHeader = fun(catName: String): String {
+            return when (currentHour) {
+                in 5..11 -> "Morning $catName"
+                in 12..16 -> "Afternoon $catName"
+                else -> "Evening $catName"
             }
-            
-            // Mark complete without growing morning streak (they missed morning window)
-            // But don't break the streak immediately inside database, let the next morning resolve it!
-            if (profile.lastGreetingDate != todayStr || forceRefresh) {
-                dao.insertUserProfile(profile.copy(
-                    lastGreetingDate = todayStr,
-                    lastGreetingId = -999,
-                    completedToday = false
-                ))
-            }
-            return@withContext Pair(text, "Supportive Note")
         }
 
-        // Before 11:00 AM: We show morning greeting
-        // If they already checked in today, load today's saved greeting
+        // Check if there is already a saved greeting for today in DB and they haven't forced a refresh
         if (!forceRefresh && profile.lastGreetingDate == todayStr && profile.lastGreetingId != null) {
-            val savedGreeting = GreetingProvider.morningGreetings.find { it.id == profile.lastGreetingId }
-                ?: GreetingProvider.getSeasonalGreeting(calendar).find { it.id == profile.lastGreetingId }
-            return@withContext Pair(
-                savedGreeting?.text ?: "Good morning. A beautiful day awaits.",
-                savedGreeting?.category?.name ?: "Greeting of the Day"
-            )
-        }
-
-        // Select a fresh greeting
-        // Repetition Prevention: Exclude last 7 shown days greetings
-        val recentIdsRaw = dao.getRecentGreetingIds(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L).toSet()
-        val recentIds = if (forceRefresh && profile.lastGreetingId != null) {
-            recentIdsRaw + profile.lastGreetingId
-        } else {
-            recentIdsRaw
-        }
-
-        // Combine standard and seasonal greetings to choose from
-        val seasonGreetings = GreetingProvider.getSeasonalGreeting(calendar)
-        val candidates = (GreetingProvider.morningGreetings + seasonGreetings)
-            .filter { it.id !in recentIds }
-            .ifEmpty { 
-                if (forceRefresh && profile.lastGreetingId != null) {
-                    (GreetingProvider.morningGreetings + seasonGreetings).filter { it.id != profile.lastGreetingId }
-                } else {
-                    GreetingProvider.morningGreetings + seasonGreetings
-                }
+            val savedIdx = if (profile.lastGreetingId >= 10000) {
+                (profile.lastGreetingId - 10000).coerceIn(0, GreetingProvider.TOTAL_GENERATIVE_QUOTES - 1)
+            } else {
+                Math.abs(profile.lastGreetingId) % GreetingProvider.TOTAL_GENERATIVE_QUOTES
             }
+            val savedGreeting = GreetingProvider.getQuoteAt(savedIdx)
+            val header = timeHeader(savedGreeting.category.name.replace("_", " ").lowercase().replaceFirstChar { it.titlecase() })
+            return@withContext Pair(savedGreeting.text, header)
+        }
 
-        // Choose one greeting
-        val selected = candidates.randomOrNull() ?: GreetingProvider.morningGreetings.first()
+        // Otherwise (it's a new day or they clicked forceRefresh)
+        // Select a fresh quote from the massive 40,000 pool!
+        // To make daily quotes consistent unless forced, we deterministic-hash the day's string if not forced.
+        val quoteIndex = if (forceRefresh) {
+            // Truly random but avoid same if possible
+            val currentIdx = if (profile.lastGreetingId != null) {
+                if (profile.lastGreetingId >= 10000) profile.lastGreetingId - 10000 else Math.abs(profile.lastGreetingId)
+            } else -1
+            var randIdx = (0 until GreetingProvider.TOTAL_GENERATIVE_QUOTES).random()
+            // Try to find a different index
+            var retries = 5
+            while (randIdx == currentIdx && retries > 0) {
+                randIdx = (0 until GreetingProvider.TOTAL_GENERATIVE_QUOTES).random()
+                retries--
+            }
+            randIdx
+        } else {
+            // Deterministic hash based on today's date string
+            Math.abs(todayStr.hashCode()) % GreetingProvider.TOTAL_GENERATIVE_QUOTES
+        }
+
+        val selected = GreetingProvider.getQuoteAt(quoteIndex)
 
         // Streak computation:
         // Did they check in yesterday?
@@ -160,16 +147,26 @@ class LumeeRepository(private val dao: LumeeDao) {
             )
         )
 
-        Pair(selected.text, selected.category.name.replace("_", " "))
+        val header = timeHeader(selected.category.name.replace("_", " ").lowercase().replaceFirstChar { it.titlecase() })
+        Pair(selected.text, header)
     }
 
-    suspend fun saveMoment(content: String, prompt: String? = null) = withContext(Dispatchers.IO) {
-        if (content.trim().isNotEmpty()) {
+    suspend fun saveMoment(
+        content: String,
+        prompt: String? = null,
+        imageUri: String? = null,
+        videoUri: String? = null,
+        audioUri: String? = null
+    ) = withContext(Dispatchers.IO) {
+        if (content.trim().isNotEmpty() || imageUri != null || videoUri != null || audioUri != null) {
             dao.insertMoment(
                 MomentEntity(
                     content = content.trim(),
                     timestamp = System.currentTimeMillis(),
-                    prompt = prompt
+                    prompt = prompt,
+                    imageUri = imageUri,
+                    videoUri = videoUri,
+                    audioUri = audioUri
                 )
             )
         }

@@ -51,6 +51,26 @@ class MainActivity : ComponentActivity() {
 fun LumeeApp(viewModel: LumeeViewModel = viewModel()) {
     val activeScreen by viewModel.activeScreen.collectAsState()
 
+    // Request Notification permission on App Start (Android 13+)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        // Handle notification permission result
+    }
+
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= 33) { // Build.VERSION_CODES.TIRAMISU
+            val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                "android.permission.POST_NOTIFICATIONS" // Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permissionCheck != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                permissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
+            }
+        }
+    }
+
     // Determine Frosted Glass premium theme background gradient
     val backgroundBrush = remember {
         Brush.linearGradient(
