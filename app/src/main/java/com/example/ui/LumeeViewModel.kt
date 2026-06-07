@@ -41,7 +41,7 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
     val currentPrompt: StateFlow<String> = _currentPrompt.asStateFlow()
 
     enum class Screen {
-        TODAY, REFLECTIONS, SETTINGS
+        TODAY, REFLECTIONS, QUOTES, SETTINGS
     }
 
     init {

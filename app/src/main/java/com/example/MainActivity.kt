@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.LumeeViewModel
 import com.example.ui.screens.GreetingScreen
+import com.example.ui.screens.QuotesScreen
 import com.example.ui.screens.ReflectionsScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.MyApplicationTheme
@@ -117,6 +119,26 @@ fun LumeeApp(viewModel: LumeeViewModel = viewModel()) {
                     )
 
                     NavigationBarItem(
+                        selected = activeScreen == LumeeViewModel.Screen.QUOTES,
+                        onClick = { viewModel.navigateTo(LumeeViewModel.Screen.QUOTES) },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.MenuBook,
+                                contentDescription = "Quotes Sanctuary"
+                            )
+                        },
+                        label = { Text("Quotes") },
+                        modifier = Modifier.testTag("nav_item_quotes"),
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color(0xFF3D3834),
+                            selectedTextColor = Color(0xFF3D3834),
+                            unselectedIconColor = Color(0xFF3D3834).copy(alpha = 0.4f),
+                            unselectedTextColor = Color(0xFF3D3834).copy(alpha = 0.4f),
+                            indicatorColor = Color.White.copy(alpha = 0.3f)
+                        )
+                    )
+
+                    NavigationBarItem(
                         selected = activeScreen == LumeeViewModel.Screen.SETTINGS,
                         onClick = { viewModel.navigateTo(LumeeViewModel.Screen.SETTINGS) },
                         icon = {
@@ -162,6 +184,9 @@ fun LumeeApp(viewModel: LumeeViewModel = viewModel()) {
                         }
                         LumeeViewModel.Screen.REFLECTIONS -> {
                             ReflectionsScreen(viewModel = viewModel)
+                        }
+                        LumeeViewModel.Screen.QUOTES -> {
+                            QuotesScreen(viewModel = viewModel)
                         }
                         LumeeViewModel.Screen.SETTINGS -> {
                             SettingsScreen(viewModel = viewModel)

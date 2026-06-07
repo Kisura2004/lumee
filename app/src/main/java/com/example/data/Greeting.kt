@@ -150,4 +150,81 @@ object GreetingProvider {
             )
         }
     }
+
+    const val TOTAL_GENERATIVE_QUOTES = 40000
+
+    fun getQuoteAt(index: Int): Greeting {
+        // Deterministically construct a deep, soothing mindfulness quote
+        val subjects = listOf(
+            "A quiet breath", "The silent mind", "Your inner heart", "Deep stillness", "The present moment",
+            "A passing cloud", "The gentle breeze", "The morning light", "Soft kindness", "A single step",
+            "The flow of time", "A quiet path", "The steady ground", "A patient star", "A cup of warm tea",
+            "Your resilient spirit", "A soft smile", "The deep ocean", "Your soul", "The beauty of waiting",
+            "Your awareness", "The cycle of nature", "A fallen leaf", "The quiet space within", "The evening shadow"
+        )
+
+        val actions = listOf(
+            "gently untangles", "quietly illuminates", "tenderly cradles", "softly reveals", "deeply grounds",
+            "patiently nourishes", "elegantly whispers", "lovingly protects", "perfectly embraces", "wisely guides",
+            "beautifully awakens", "knowingly restores", "harmoniously balances", "serenely heals", "faithfully anchors",
+            "smoothly clears"
+        )
+
+        val objects = listOf(
+            "the weight of yesterday", "the noise of the busy world", "the infinite horizon within",
+            "infinite, quiet possibilities", "the simple magic of being alive", "unspoken courage and resilience",
+            "a beautiful landscape of peace", "the hidden river of deep joy", "safe, peaceful harbors",
+            "clarity in times of change", "the natural rhythm of growth", "unconditional self-acceptance",
+            "the quiet poetry of now", "a warm sanctuary of hope", "calm currents in the heart",
+            "peace that needs no explanation"
+        )
+
+        val transitions = listOf(
+            "inviting you to release what is finished.", "showing that you are already complete.",
+            "reminding you that there is absolutely no rush.", "offering a soft place to simply notice and exist.",
+            "letting you bloom in your own organic time.", "asking nothing of you but matching your true center.",
+            "anchoring your steps securely onto the earth.", "gently filling your cup with slow reassurance.",
+            "guiding you safely back to your serene soul.", "clearing the path for quiet, patient wisdom.",
+            "enabling your thoughts to settle like autumn leaves.", "proving that small steps carry immense light.",
+            "breathing comfort into your evening thoughts.", "reconnecting you to the natural flow of life.",
+            "opening a door to quiet, steady gratitude.", "wrapping your mind in a soft cloak of comfort."
+        )
+
+        val authors = listOf(
+            "Sage of the Forest", "Ancient Whisperer", "The Inner Voice", "Sister Peace", "Zen Master Ryokan",
+            "A Quiet Mountain", "A Cloud Passing By", "Socrates of the Garden", "Quiet Heart Affirmations",
+            "Morning Sun Daily", "The Earthly Spirit", "A Gentle Star", "The Cosmic Cradle", "Ocean Breeze Whisper",
+            "The Sage of Solitude", "Universal Breath"
+        )
+
+        val categories = listOf(
+            Greeting.Category.GENTLE_GROUNDING,
+            Greeting.Category.HAPPY_UPLIFTING,
+            Greeting.Category.REFLECTIVE_THOUGHTFUL
+        )
+
+        val normalizedIndex = index.coerceIn(0, TOTAL_GENERATIVE_QUOTES - 1)
+
+        val sIdx = normalizedIndex % subjects.size
+        val aIdx = (normalizedIndex / subjects.size) % actions.size
+        val oIdx = (normalizedIndex / (subjects.size * actions.size)) % objects.size
+        val tIdx = (normalizedIndex / (subjects.size * actions.size * objects.size)) % transitions.size
+        val auIdx = (normalizedIndex / (subjects.size * actions.size * objects.size * transitions.size)) % authors.size
+        val cIdx = (normalizedIndex * 7) % categories.size
+
+        val subject = subjects[sIdx]
+        val action = actions[aIdx]
+        val obj = objects[oIdx]
+        val transition = transitions[tIdx]
+        val author = authors[auIdx]
+
+        val text = "$subject $action $obj, $transition"
+
+        return Greeting(
+            id = normalizedIndex + 10000,
+            text = text,
+            author = author,
+            category = categories[cIdx]
+        )
+    }
 }
