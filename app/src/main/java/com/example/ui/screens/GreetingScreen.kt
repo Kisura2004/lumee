@@ -285,6 +285,24 @@ fun GreetingScreen(
         var selectedTechnique by remember { mutableStateOf(BreathingTechnique.BOX) }
         var secondsRemaining by remember { mutableStateOf(0) }
 
+        val triggerBreathingState by viewModel.triggerBreathing.collectAsState()
+        val preferredTechniqueState by viewModel.preferredBreathingTechnique.collectAsState()
+
+        LaunchedEffect(triggerBreathingState) {
+            if (triggerBreathingState) {
+                if (preferredTechniqueState == "CALM") {
+                    selectedTechnique = BreathingTechnique.CALM
+                } else if (preferredTechniqueState == "COHERENT") {
+                    selectedTechnique = BreathingTechnique.COHERENT
+                } else {
+                    selectedTechnique = BreathingTechnique.BOX
+                }
+                isBreathingActive = true
+                viewModel.setTriggerBreathing(false)
+                viewModel.setPreferredBreathingTechnique(null)
+            }
+        }
+
         LaunchedEffect(isBreathingActive, selectedTechnique) {
             if (!isBreathingActive) {
                 breathingPhase = BreathingPhase.IDLE

@@ -29,6 +29,88 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
     private val _activeScreen = MutableStateFlow(Screen.TODAY)
     val activeScreen: StateFlow<Screen> = _activeScreen.asStateFlow()
 
+    private val _triggerBreathing = MutableStateFlow(false)
+    val triggerBreathing: StateFlow<Boolean> = _triggerBreathing.asStateFlow()
+
+    private val _triggerComposer = MutableStateFlow(false)
+    val triggerComposer: StateFlow<Boolean> = _triggerComposer.asStateFlow()
+
+    private val _preferredBreathingTechnique = MutableStateFlow<String?>(null)
+    val preferredBreathingTechnique: StateFlow<String?> = _preferredBreathingTechnique.asStateFlow()
+
+    enum class StartupGreetingType {
+        MORNING, EVENING
+    }
+
+    private var hasCheckedStartupGreeting = false
+
+    private val _showStartupGreeting = MutableStateFlow<StartupGreetingType?>(null)
+    val showStartupGreeting: StateFlow<StartupGreetingType?> = _showStartupGreeting.asStateFlow()
+
+    fun dismissStartupGreeting() {
+        _showStartupGreeting.value = null
+    }
+
+    fun checkAndTriggerStartupGreeting() {
+        if (hasCheckedStartupGreeting) return
+        hasCheckedStartupGreeting = true
+        val calendar = Calendar.getInstance()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        if (hour in 5..11) {
+            _showStartupGreeting.value = StartupGreetingType.MORNING
+        } else if (hour >= 19 || hour < 5) {
+            _showStartupGreeting.value = StartupGreetingType.EVENING
+        } else {
+            _showStartupGreeting.value = null
+        }
+    }
+
+    fun setTriggerBreathing(trigger: Boolean) {
+        _triggerBreathing.value = trigger
+    }
+
+    fun setTriggerComposer(trigger: Boolean) {
+        _triggerComposer.value = trigger
+    }
+
+    fun setPreferredBreathingTechnique(technique: String?) {
+        _preferredBreathingTechnique.value = technique
+    }
+
+    fun handleNotificationIntent(intent: android.content.Intent?) {
+        if (intent == null) return
+        val navigateTo = intent.getStringExtra("NAVIGATE_TO")
+        val triggerBreathe = intent.getBooleanExtra("TRIGGER_BREATHING", false)
+        val triggerComp = intent.getBooleanExtra("TRIGGER_COMPOSER", false)
+        val technique = intent.getStringExtra("BREATHING_TECHNIQUE")
+
+        if (navigateTo != null) {
+            when (navigateTo) {
+                "TODAY" -> navigateTo(Screen.TODAY)
+                "REFLECTIONS" -> navigateTo(Screen.REFLECTIONS)
+                "QUOTES" -> navigateTo(Screen.QUOTES)
+                "SETTINGS" -> navigateTo(Screen.SETTINGS)
+            }
+        }
+
+        if (triggerBreathe) {
+            _triggerBreathing.value = true
+            if (technique != null) {
+                _preferredBreathingTechnique.value = technique
+            }
+        }
+        if (triggerComp) {
+            _triggerComposer.value = true
+        }
+
+        try {
+            intent.removeExtra("NAVIGATE_TO")
+            intent.removeExtra("TRIGGER_BREATHING")
+            intent.removeExtra("TRIGGER_COMPOSER")
+            intent.removeExtra("BREATHING_TECHNIQUE")
+        } catch (_: Exception) {}
+    }
+
     // Reflections Prompt Handling
     private val prompts = listOf(
         "What is on your mind right now?",

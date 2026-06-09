@@ -48,6 +48,14 @@ fun ReflectionsScreen(
     val currentPrompt by viewModel.currentPrompt.collectAsState()
 
     var showComposer by remember { mutableStateOf(false) }
+    val triggerComposerState by viewModel.triggerComposer.collectAsState()
+
+    LaunchedEffect(triggerComposerState) {
+        if (triggerComposerState) {
+            showComposer = true
+            viewModel.setTriggerComposer(false)
+        }
+    }
     var noteContent by remember { mutableStateOf("") }
     var usePromptInNote by remember { mutableStateOf(false) }
     var momentToDelete by remember { mutableStateOf<MomentEntity?>(null) }
