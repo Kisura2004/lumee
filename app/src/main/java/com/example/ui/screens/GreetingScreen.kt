@@ -748,10 +748,23 @@ fun GreetingScreen(
         val coroutineScope = rememberCoroutineScope()
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
+        var isChatUnlocked by remember { mutableStateOf(false) }
+        var chatUnlockPasswordInput by remember { mutableStateOf("") }
+        val savedPassword = userProfile?.password
+
         // Sync scroll to end when new messages arrive
         LaunchedEffect(emotionsList.size) {
             if (emotionsList.isNotEmpty()) {
                 listState.animateScrollToItem(emotionsList.size - 1)
+            }
+        }
+
+        // Automatic state adjustment based on password settings
+        LaunchedEffect(savedPassword) {
+            if (savedPassword.isNullOrEmpty()) {
+                isChatUnlocked = true
+            } else {
+                isChatUnlocked = false
             }
         }
 
@@ -773,157 +786,241 @@ fun GreetingScreen(
             ) {
                 // Header of Buddy Chat
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Color(0xFFE0A7A7).copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text("🌸", fontSize = 16.sp)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(0xFFE0A7A7).copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("🌸", fontSize = 16.sp)
+                        }
+                        Column {
+                            Text(
+                                text = "Lumee Chat Buddy",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF3D3834)
+                            )
+                            Text(
+                                text = "Share your raw emotions securely & locally",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF3D3834).copy(alpha = 0.45f)
+                            )
+                        }
                     }
-                    Column {
-                        Text(
-                            text = "Lumee Chat Buddy",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF3D3834)
-                        )
-                        Text(
-                            text = "Share your raw emotions securely & locally",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF3D3834).copy(alpha = 0.45f)
-                        )
+
+                    if (!savedPassword.isNullOrEmpty() && isChatUnlocked) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFE0A7A7).copy(alpha = 0.15f))
+                                .clickable {
+                                    isChatUnlocked = false
+                                    chatUnlockPasswordInput = ""
+                                }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text("Lock", fontSize = 11.sp, color = Color(0xFF8B5A5A), fontWeight = FontWeight.Bold)
+                                Text("🔒", fontSize = 11.sp)
+                            }
+                        }
                     }
                 }
 
                 Divider(color = Color.White.copy(alpha = 0.4f), thickness = 0.8.dp)
 
-                // Dialog lists
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 100.dp, max = 220.dp)
-                        .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
-                        .padding(8.dp)
-                ) {
-                    if (emotionsList.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "How are you truly feeling right now?\nType below or select a mood chip...",
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF3D3834).copy(alpha = 0.5f)
+                if (!isChatUnlocked) {
+                    // Password lock overlay for local privacy compliance
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Secure Companion Shield 🔒",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF8B5A5A),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "To view your emotional companion records and continue chatting with Lumee, please enter your offline sanctuary password.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF3D3834).copy(alpha = 0.6f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = chatUnlockPasswordInput,
+                            onValueChange = { chatUnlockPasswordInput = it },
+                            placeholder = { Text("Enter your profile password") },
+                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFFE0A7A7),
+                                unfocusedBorderColor = Color(0xFF3D3834).copy(alpha = 0.2f),
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black
                             )
-                        }
-                    } else {
-                        androidx.compose.foundation.lazy.LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        )
+
+                        Button(
+                            onClick = {
+                                if (chatUnlockPasswordInput == savedPassword) {
+                                    isChatUnlocked = true
+                                    chatUnlockPasswordInput = ""
+                                } else {
+                                    android.widget.Toast.makeText(context, "Incorrect Password", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A7A7)),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                         ) {
-                            items(emotionsList) { msg ->
-                                val isUser = msg.sender == "USER"
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .widthIn(max = 240.dp)
-                                            .clip(
-                                                RoundedCornerShape(
-                                                    topStart = 16.dp,
-                                                    topEnd = 16.dp,
-                                                    bottomStart = if (isUser) 16.dp else 4.dp,
-                                                    bottomEnd = if (isUser) 4.dp else 16.dp
-                                                )
-                                            )
-                                            .background(
-                                                if (isUser) Color(0xFFE0A7A7).copy(alpha = 0.8f)
-                                                else Color.White.copy(alpha = 0.65f)
-                                            )
-                                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            Text("Unlock Conversations 🌸", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                    }
+                } else {
+                    // Dialog lists
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 100.dp, max = 220.dp)
+                            .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
+                            .padding(8.dp)
+                    ) {
+                        if (emotionsList.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "How are you truly feeling right now?\nType below or select a mood chip...",
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF3D3834).copy(alpha = 0.5f)
+                                )
+                            }
+                        } else {
+                            androidx.compose.foundation.lazy.LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(emotionsList) { msg ->
+                                    val isUser = msg.sender == "USER"
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
                                     ) {
-                                        Text(
-                                            text = msg.text,
-                                            fontSize = 13.sp,
-                                            color = if (isUser) Color.White else Color(0xFF3D3834)
-                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .widthIn(max = 240.dp)
+                                                .clip(
+                                                    RoundedCornerShape(
+                                                        topStart = 16.dp,
+                                                        topEnd = 16.dp,
+                                                        bottomStart = if (isUser) 16.dp else 4.dp,
+                                                        bottomEnd = if (isUser) 4.dp else 16.dp
+                                                    )
+                                                )
+                                                .background(
+                                                    if (isUser) Color(0xFFE0A7A7).copy(alpha = 0.8f)
+                                                    else Color.White.copy(alpha = 0.65f)
+                                                )
+                                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                                        ) {
+                                            Text(
+                                                text = msg.text,
+                                                fontSize = 13.sp,
+                                                color = if (isUser) Color.White else Color(0xFF3D3834)
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                // Mood quick chips to tap
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val moodChips = listOf(
-                        "😔 Sad",
-                        "😰 Anxious",
-                        "😡 Angry",
-                        "😃 Happy"
-                    )
-                    moodChips.forEach { chipName ->
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color.White.copy(alpha = 0.4f))
-                                .clickable {
-                                    viewModel.sendEmotion("I am feeling $chipName right now.")
-                                }
-                                .border(0.6.dp, Color(0xFFE0A7A7).copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                                .padding(horizontal = 10.dp, vertical = 5.dp)
-                        ) {
-                            Text(text = chipName, fontSize = 11.sp, color = Color(0xFF8B5A5A))
+                    // Mood quick chips to tap
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val moodChips = listOf(
+                            "😔 Sad",
+                            "😰 Anxious",
+                            "😡 Angry",
+                            "😃 Happy"
+                        )
+                        moodChips.forEach { chipName ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.4f))
+                                    .clickable {
+                                        viewModel.sendEmotion("I am feeling $chipName right now.")
+                                    }
+                                    .border(0.6.dp, Color(0xFFE0A7A7).copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Text(text = chipName, fontSize = 11.sp, color = Color(0xFF8B5A5A))
+                            }
                         }
                     }
-                }
 
-                // Type bar input field
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = emotionInputText,
-                        onValueChange = { emotionInputText = it },
-                        placeholder = { Text("Share an emotion...", fontSize = 13.sp) },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(14.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White.copy(alpha = 0.45f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
-                            focusedBorderColor = Color(0xFFE0A7A7),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black
-                        )
-                    )
-
-                    Button(
-                        onClick = {
-                            if (emotionInputText.trim().isNotEmpty()) {
-                                viewModel.sendEmotion(emotionInputText)
-                                emotionInputText = ""
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A7A7)),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.height(48.dp)
+                    // Type bar input field
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Send", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                        OutlinedTextField(
+                            value = emotionInputText,
+                            onValueChange = { emotionInputText = it },
+                            placeholder = { Text("Share an emotion...", fontSize = 13.sp) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(14.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White.copy(alpha = 0.45f),
+                                unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
+                                focusedBorderColor = Color(0xFFE0A7A7),
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black
+                            )
+                        )
+
+                        Button(
+                            onClick = {
+                                if (emotionInputText.trim().isNotEmpty()) {
+                                    viewModel.sendEmotion(emotionInputText)
+                                    emotionInputText = ""
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A7A7)),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.height(48.dp)
+                        ) {
+                            Text("Send", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
