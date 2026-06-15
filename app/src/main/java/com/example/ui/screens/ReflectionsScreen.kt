@@ -112,6 +112,28 @@ fun ReflectionsScreen(
         }
     }
 
+    val tempVideoFile = remember { java.io.File(context.cacheDir, "captured_vid_${System.currentTimeMillis()}.mp4") }
+    val tempVideoUri = remember {
+        try {
+            androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                tempVideoFile
+            )
+        } catch (e: Exception) {
+            android.net.Uri.EMPTY
+        }
+    }
+
+    val recordVideoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CaptureVideo()
+    ) { success ->
+        if (success) {
+            attachedVideoUri = tempVideoUri.toString()
+            android.widget.Toast.makeText(context, "Video recorded successfully 📹", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val pickVideoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -139,8 +161,7 @@ fun ReflectionsScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            attachedVideoUri = "mock_captured_video"
-            android.widget.Toast.makeText(context, "Captured custom video moment 📹", android.widget.Toast.LENGTH_SHORT).show()
+            showVideoOptions = true
         } else {
             android.widget.Toast.makeText(context, "Camera permission needed for recording video", android.widget.Toast.LENGTH_SHORT).show()
         }
@@ -613,9 +634,13 @@ fun ReflectionsScreen(
                                 confirmButton = {
                                     Button(
                                         onClick = {
-                                            attachedVideoUri = "mock_captured_video"
+                                            try {
+                                                recordVideoLauncher.launch(tempVideoUri)
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                                android.widget.Toast.makeText(context, "Could not open camera recorder", android.widget.Toast.LENGTH_SHORT).show()
+                                            }
                                             showVideoOptions = false
-                                            android.widget.Toast.makeText(context, "Captured custom video moment 📹", android.widget.Toast.LENGTH_SHORT).show()
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A7A7))
                                     ) {

@@ -176,6 +176,28 @@ class LumeeRepository(private val dao: LumeeDao) {
         dao.deleteMoment(moment)
     }
 
+    suspend fun updateProfilePassword(password: String?) = withContext(Dispatchers.IO) {
+        val profile = getOrCreateProfile()
+        dao.insertUserProfile(profile.copy(password = password))
+    }
+
+    // Emotion Helpers
+    val emotions: Flow<List<com.example.data.database.EmotionEntity>> = dao.getAllEmotionsFlow()
+
+    suspend fun insertEmotion(sender: String, text: String, emotionType: String? = null) = withContext(Dispatchers.IO) {
+        dao.insertEmotion(
+            com.example.data.database.EmotionEntity(
+                sender = sender,
+                text = text.trim(),
+                emotionType = emotionType
+            )
+        )
+    }
+
+    suspend fun clearEmotions() = withContext(Dispatchers.IO) {
+        dao.clearEmotions()
+    }
+
     suspend fun clearOldLogData() = withContext(Dispatchers.IO) {
         // Keep DB lightweight
     }

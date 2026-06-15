@@ -344,21 +344,43 @@ fun QuotesScreen(viewModel: LumeeViewModel) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Button(
-                        onClick = { contemplationQuote = null },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE0A7A7)
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
+                    val context = androidx.compose.ui.platform.LocalContext.current
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = "Return to silence",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        OutlinedButton(
+                            onClick = {
+                                shareQuoteAsImage(context, quote.text, quote.category.name)
+                            },
+                            modifier = Modifier
+                                .weight(1.1f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0A7A7)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF8B5A5A))
+                        ) {
+                            Text("Share Card 🌸", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = { contemplationQuote = null },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE0A7A7)
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .height(48.dp)
+                        ) {
+                            Text(
+                                text = "Return",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                 }
             }

@@ -83,6 +83,8 @@ class NotificationReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+
         when (type) {
             "MORNING" -> {
                 val greeting = try {
@@ -104,34 +106,43 @@ class NotificationReceiver : BroadcastReceiver() {
                 manager.notify(1002, notification)
             }
             "EVENING" -> {
+                val title = if (currentHour >= 21 || currentHour < 4) "Late Night Motivation 🌌" else "Evening Calm 🧘"
+                val actionLabel = if (currentHour >= 21 || currentHour < 4) "Deep Sleep Inhale 😴" else "Unwind Calm 🧘"
                 val greeting = try {
-                    val scrambledIdx = java.util.Random().nextInt(GreetingProvider.TOTAL_GENERATIVE_QUOTES)
-                    GreetingProvider.getQuoteAt(scrambledIdx).text
+                    if (currentHour >= 21 || currentHour < 4) {
+                        "The stars are quiet. Rest fully, release all expectation, and dream of gentle roads."
+                    } else {
+                        "As the day softens, take a quiet breath and release the weights of today."
+                    }
                 } catch (e: Exception) {
                     "Your inner heart quietly restores the weights of today. Rest fully."
                 }
                 val notification = NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(android.R.drawable.ic_dialog_info)
-                    .setContentTitle("Late Night Motivation 🌌")
+                    .setContentTitle(title)
                     .setContentText(greeting)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(greeting))
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(contentPendingIntent)
                     .setAutoCancel(true)
-                    .addAction(android.R.drawable.ic_media_play, "Unwind Calm 🧘", breathePendingIntent)
+                    .addAction(android.R.drawable.ic_media_play, actionLabel, breathePendingIntent)
                     .addAction(android.R.drawable.ic_menu_help, "Quotes Sanctuary 📖", quotesPendingIntent)
                     .build()
                 manager.notify(1003, notification)
             }
             else -> { // "PREFERRED"
-                val greeting = try {
-                    GreetingProvider.afternoonGreetings.random()
-                } catch (e: Exception) {
-                    "Take a slow breath. Relax your shoulders. You are doing well."
+                val (title, greeting) = if (currentHour in 4..11) {
+                    Pair("Morning Inspiration 🌅", "Rise and shine. Today is a clean canvas waiting for your energy.")
+                } else if (currentHour in 17..20) {
+                    Pair("Evening Grace 🧘", "You have made it to the golden hour. Take a moment to sigh and relax.")
+                } else if (currentHour >= 21 || currentHour < 4) {
+                    Pair("Late Night Peace 🌌", "The world is asleep. Allow your mind to settle into perfect quiet.")
+                } else {
+                    Pair("Gentle Moment from Lumee ☀️", "Take a slow breath. Relax your shoulders. You are doing well.")
                 }
                 val notification = NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(android.R.drawable.ic_dialog_info)
-                    .setContentTitle("Gentle Moment from Lumee ☀️")
+                    .setContentTitle(title)
                     .setContentText(greeting)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(greeting))
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)

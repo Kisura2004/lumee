@@ -43,11 +43,48 @@ private val LightColorScheme =
 
 @Composable
 fun MyApplicationTheme(
+  palette: String = "PEACH",
   darkTheme: Boolean = isSystemInDarkTheme(),
   // Force deactivate dynamic system color to preserve our custom premium curated Frosted Glass theme
   dynamicColor: Boolean = false,
   content: @Composable () -> Unit,
 ) {
+  val accentColor = when (palette) {
+    "TWILIGHT" -> Color(0xFF9E7FFE)
+    "FOREST" -> Color(0xFF4E7A53)
+    "OCEAN" -> Color(0xFF3882B6)
+    else -> Color(0xFFE0A7A7) // "PEACH"
+  }
+
+  val textColor = when (palette) {
+    "TWILIGHT" -> Color(0xFFECE5DF)
+    else -> Color(0xFF3D3834)
+  }
+
+  val subTextColor = when (palette) {
+    "TWILIGHT" -> Color(0xFFECE5DF).copy(alpha = 0.7f)
+    else -> Color(0xFF423E3B)
+  }
+
+  val selectedLightScheme = lightColorScheme(
+    primary = accentColor,
+    secondary = subTextColor,
+    tertiary = accentColor,
+    background = when (palette) {
+      "TWILIGHT" -> Color(0xFF0F101A)
+      "FOREST" -> Color(0xFFF4F9F4)
+      "OCEAN" -> Color(0xFFF0F4FF)
+      else -> Color(0xFFFDF6F0)
+    },
+    surface = Color(0x33FFFFFF),
+    surfaceVariant = Color(0x4DFFFFFF),
+    onPrimary = Color.White,
+    onSecondary = textColor,
+    onBackground = textColor,
+    onSurface = textColor,
+    onSurfaceVariant = subTextColor
+  )
+
   val colorScheme =
     when {
       dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -56,7 +93,7 @@ fun MyApplicationTheme(
       }
 
       darkTheme -> DarkColorScheme
-      else -> LightColorScheme
+      else -> selectedLightScheme
     }
 
   MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)

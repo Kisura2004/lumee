@@ -2,9 +2,12 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -789,6 +792,114 @@ fun SettingsScreen(
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ✦ COSMIC COLOR PALETTE CUSTOMIZER ✦
+        val activePaletteState by viewModel.activeColorPalette.collectAsState()
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White.copy(alpha = 0.3f))
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(24.dp)
+                )
+                .padding(20.dp)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color(0xFFE0A7A7).copy(alpha = 0.2f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🎨", fontSize = 16.sp)
+                    }
+                    Text(
+                        text = "Cosmic Color Palette",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF3D3834)
+                    )
+                }
+
+                Text(
+                     text = "Select an organic color path to rest and re-color your home widgets, background sails, greeting elements, and notification titles.",
+                     style = MaterialTheme.typography.bodyMedium,
+                     color = Color(0xFF3D3834).copy(alpha = 0.6f)
+                )
+
+                // Themed choice row
+                val options = listOf(
+                    Triple("PEACH", "Peach Rose", listOf(Color(0xFFFFF9E8), Color(0xFFFBEBE6), Color(0xFFE8F0F7))),
+                    Triple("TWILIGHT", "Twilight Space", listOf(Color(0xFF0F101A), Color(0xFF1D1B30), Color(0xFF15101F))),
+                    Triple("FOREST", "Forest Sage", listOf(Color(0xFFF4F9F4), Color(0xFFE6EFE6), Color(0xFFDFE9DF))),
+                    Triple("OCEAN", "Ocean Sky", listOf(Color(0xFFF0F4FF), Color(0xFFE1E8F9), Color(0xFFD4DFF4)))
+                )
+
+                options.forEach { (key, label, gradientColors) ->
+                    val isSelected = activePaletteState == key
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isSelected) Color.White.copy(alpha = 0.4f) else Color.Transparent)
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) Color(0xFFE0A7A7) else Color.White.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clickable { viewModel.setColorPalette(key) }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Mini gradient preview
+                            Row(
+                                modifier = Modifier
+                                    .width(44.dp)
+                                    .height(24.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Brush.horizontalGradient(gradientColors))
+                            ) {}
+
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                ),
+                                color = Color(0xFF3D3834)
+                            )
+                        }
+
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { viewModel.setColorPalette(key) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFFE0A7A7),
+                                unselectedColor = Color(0xFF3D3834).copy(alpha = 0.3f)
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // System description of quiet companion
         Column(

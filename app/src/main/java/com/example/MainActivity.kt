@@ -51,9 +51,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         currentIntentState.value = intent
         setContent {
-            MyApplicationTheme {
-                LumeeApp(intent = currentIntentState.value)
-            }
+            LumeeApp(intent = currentIntentState.value)
         }
     }
 
@@ -68,6 +66,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LumeeApp(intent: android.content.Intent?, viewModel: LumeeViewModel = viewModel()) {
     val activeScreen by viewModel.activeScreen.collectAsState()
+    val activePaletteState by viewModel.activeColorPalette.collectAsState()
 
     LaunchedEffect(intent) {
         if (intent != null) {
@@ -96,22 +95,39 @@ fun LumeeApp(intent: android.content.Intent?, viewModel: LumeeViewModel = viewMo
         }
     }
 
-    // Determine Frosted Glass premium theme background gradient
-    val backgroundBrush = remember {
-        Brush.linearGradient(
-            colors = listOf(
-                Color(0xFFFDF6F0), // Soft warm cream
-                Color(0xFFF4E8E8), // Soft lavender-grey-blush
-                Color(0xFFE8F0F7)  // Soft ice white-blue
-            )
-        )
-    }
+    MyApplicationTheme(palette = activePaletteState) {
+        // Determine Frosted Glass premium theme background gradient
+        val backgroundBrush = remember(activePaletteState) {
+            val colors = when (activePaletteState) {
+                "TWILIGHT" -> listOf(
+                    Color(0xFF0F101A), // Dark indigo midnight
+                    Color(0xFF1D1B30), // Amethyst twilight
+                    Color(0xFF15101F)  // Obsidian berry
+                )
+                "FOREST" -> listOf(
+                    Color(0xFFF4F9F4), // Soft mint cream
+                    Color(0xFFE6EFE6), // Pale sage green
+                    Color(0xFFDFE9DF)  // Mossy gray
+                )
+                "OCEAN" -> listOf(
+                    Color(0xFFF0F4FF), // Soft azure mist
+                    Color(0xFFE1E8F9), // Serene sky blue
+                    Color(0xFFD4DFF4)  // Ocean foam
+                )
+                else -> listOf( // "PEACH"
+                    Color(0xFFFDF6F0), // Soft warm cream
+                    Color(0xFFF4E8E8), // Soft lavender-grey-blush
+                    Color(0xFFE8F0F7)  // Soft ice white-blue
+                )
+            }
+            Brush.linearGradient(colors = colors)
+        }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundBrush)
-    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundBrush)
+        ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = Color.Transparent, // Let the beautiful frosted glass gradient act as canvas
@@ -257,6 +273,7 @@ fun LumeeApp(intent: android.content.Intent?, viewModel: LumeeViewModel = viewMo
             }
         }
     }
+  }
 }
 
 @Composable
@@ -269,26 +286,40 @@ fun StartupGreetingOverlay(
     val name = userProfile?.name ?: "Friend"
 
     val isMorning = type == LumeeViewModel.StartupGreetingType.MORNING
+    val isEvening = type == LumeeViewModel.StartupGreetingType.EVENING
+    val isLateNight = type == LumeeViewModel.StartupGreetingType.LATE_NIGHT
 
     val fontColor = if (isMorning) Color(0xFF3D3834) else Color(0xFFECE5DF)
     val subFontColor = if (isMorning) Color(0xFF3D3834).copy(alpha = 0.6f) else Color(0xFFECE5DF).copy(alpha = 0.7f)
 
-    val backgroundBrush = if (isMorning) {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFFFFF9E8), // Buttery gold
-                Color(0xFFFBEBE6), // Dawn peach
-                Color(0xFFF2EAF1)  // Lilac cream
+    val backgroundBrush = when {
+        isMorning -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFFFFF9E8), // Buttery gold
+                    Color(0xFFFBEBE6), // Dawn peach
+                    Color(0xFFF2EAF1)  // Lilac cream
+                )
             )
-        )
-    } else {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF0F101A), // Midnight black indigo
-                Color(0xFF1D1B30), // Deep purple space
-                Color(0xFF15101F)  // Warm obsidian dark berry
+        }
+        isEvening -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF2C1E3A), // Cozy sunset dark purple
+                    Color(0xFF3F2B48), // Deep amethyst
+                    Color(0xFF1E1428)  // Dark violet cocoa
+                )
             )
-        )
+        }
+        else -> { // Late night
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF0F101A), // Midnight black indigo
+                    Color(0xFF1D1B30), // Deep purple space
+                    Color(0xFF15101F)  // Warm obsidian dark berry
+                )
+            )
+        }
     }
 
     Box(
@@ -313,7 +344,18 @@ fun StartupGreetingOverlay(
                             radius = 600f,
                             center = Offset(size.width * 0.2f, size.height * 0.75f)
                         )
-                    } else {
+                    } else if (isEvening) {
+                        drawCircle(
+                            color = Color(0xFFFF8A80).copy(alpha = 0.12f),
+                            radius = 480f,
+                            center = Offset(size.width * 0.75f, size.height * 0.25f)
+                        )
+                        drawCircle(
+                            color = Color(0xFFE0A7A7).copy(alpha = 0.08f),
+                            radius = 550f,
+                            center = Offset(size.width * 0.25f, size.height * 0.75f)
+                        )
+                    } else { // Late night
                         drawCircle(
                             color = Color(0xFF7E57C2).copy(alpha = 0.15f),
                             radius = 500f,
@@ -354,7 +396,7 @@ fun StartupGreetingOverlay(
                     modifier = Modifier
                         .size(64.dp)
                         .background(
-                            color = if (isMorning) Color(0xFFFFF176).copy(alpha = 0.25f) else Color(0xFFFFD54F).copy(alpha = 0.1f),
+                            color = if (isMorning) Color(0xFFFFF176).copy(alpha = 0.25f) else if (isEvening) Color(0xFFFF8A80).copy(alpha = 0.15f) else Color(0xFFFFD54F).copy(alpha = 0.1f),
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -366,14 +408,37 @@ fun StartupGreetingOverlay(
                             tint = Color(0xFFE65100),
                             modifier = Modifier.size(36.dp)
                         )
-                    } else {
+                    } else if (isEvening) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .drawBehind {
+                                    drawCircle(
+                                        color = Color(0xFFFF8A80),
+                                        radius = size.width / 2.2f
+                                    )
+                                    // Dusk cloud shade
+                                    drawCircle(
+                                        color = Color(0xFF2C1E3A),
+                                        radius = size.width / 2.2f,
+                                        center = Offset(size.width * 0.2f, size.height * 0.5f)
+                                    )
+                                }
+                        )
+                    } else { // Late night crescent
                         Box(
                             modifier = Modifier
                                 .size(24.dp)
                                 .drawBehind {
                                     drawCircle(
                                         color = Color(0xFFFFD54F),
-                                        radius = size.width / 3f
+                                        radius = size.width / 2f
+                                    )
+                                    // Negative space cut for crescent
+                                    drawCircle(
+                                        color = Color(0xFF1F2036),
+                                        radius = size.width / 2f,
+                                        center = Offset(size.width * 0.35f, size.height * 0.15f)
                                     )
                                 }
                         )
@@ -382,7 +447,11 @@ fun StartupGreetingOverlay(
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = if (isMorning) "Morning Wakeup 🌅" else "Late Night Motivation 🌌",
+                        text = when {
+                            isMorning -> "Morning Wakeup 🌅"
+                            isEvening -> "Evening Calm 🧘"
+                            else -> "Late Night Motivation 🌌"
+                        },
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp,
@@ -390,7 +459,11 @@ fun StartupGreetingOverlay(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (isMorning) "Rise and shine, $name" else "Quiet under the stars, $name",
+                        text = when {
+                            isMorning -> "Rise and shine, $name"
+                            isEvening -> "Welcome back, $name"
+                            else -> "Quiet under the stars, $name"
+                        },
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = fontColor
@@ -399,10 +472,10 @@ fun StartupGreetingOverlay(
                     )
                 }
 
-                val quoteText = if (isMorning) {
-                    "Today is a playground of possibilities. Let your curiosity lead the way, and find joy in the smallest discoveries."
-                } else {
-                    "Your inner heart quietly restores the weights of today. Rest fully, release expectation, and dream of gentle roads."
+                val quoteText = when {
+                    isMorning -> "Today is a playground of possibilities. Let your curiosity lead the way, and find joy in the smallest discoveries."
+                    isEvening -> "Take a quiet moment to look back at today with kindness. You grew, you tried, and that is more than enough."
+                    else -> "Your inner heart quietly restores the weights of today. Rest fully, release expectation, and dream of gentle roads."
                 }
 
                 Box(
@@ -428,7 +501,11 @@ fun StartupGreetingOverlay(
                 }
 
                 Text(
-                    text = if (isMorning) "How would you like to breathe into today?" else "How would you like to gently wind down?",
+                    text = when {
+                        isMorning -> "How would you like to breathe into today?"
+                        isEvening -> "Would you like a gentle space to pause and reflect?"
+                        else -> "How would you like to gently wind down?"
+                    },
                     fontSize = 13.sp,
                     color = subFontColor,
                     textAlign = TextAlign.Center,
@@ -443,6 +520,8 @@ fun StartupGreetingOverlay(
                         onClick = {
                             if (isMorning) {
                                 viewModel.setPreferredBreathingTechnique("BOX")
+                            } else if (isEvening) {
+                                viewModel.setPreferredBreathingTechnique("CALM")
                             } else {
                                 viewModel.setPreferredBreathingTechnique("CALM")
                             }
@@ -468,9 +547,13 @@ fun StartupGreetingOverlay(
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
-                            )
+                              )
                             Text(
-                                text = if (isMorning) "Quick Daily Inhale" else "Relax & Unwind Calm",
+                                text = when {
+                                    isMorning -> "Quick Daily Inhale"
+                                    isEvening -> "Cozy Evening Breath"
+                                    else -> "Deep Sleep Inhale"
+                                },
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
@@ -528,7 +611,11 @@ fun StartupGreetingOverlay(
                         )
                     ) {
                         Text(
-                            text = if (isMorning) "Step gently into today →" else "Rest beautifully under the stars →",
+                            text = when {
+                                isMorning -> "Step gently into today →"
+                                isEvening -> "Step gently into the evening →"
+                                else -> "Rest beautifully under the stars →"
+                            },
                             fontWeight = FontWeight.SemiBold,
                             color = subFontColor
                         )

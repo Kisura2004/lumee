@@ -37,4 +37,14 @@ interface LumeeDao {
 
     @Query("SELECT greetingId FROM greeting_history WHERE timestamp > :sinceTimestamp")
     suspend fun getRecentGreetingIds(sinceTimestamp: Long): List<Int>
+
+    // Local Emotions Chat Buddy Logs
+    @Query("SELECT * FROM emotions ORDER BY timestamp ASC")
+    fun getAllEmotionsFlow(): Flow<List<EmotionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEmotion(emotion: EmotionEntity)
+
+    @Query("DELETE FROM emotions")
+    suspend fun clearEmotions()
 }

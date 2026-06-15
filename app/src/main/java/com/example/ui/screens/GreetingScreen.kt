@@ -15,7 +15,11 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +68,28 @@ fun GreetingScreen(
     val todayGreeting by viewModel.todayGreeting.collectAsState()
     val isGreetingLoading by viewModel.isGreetingLoading.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
+    val emotionsList by viewModel.emotions.collectAsState()
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var showProfileModal by remember { mutableStateOf(false) }
+    var passwordInput by remember { mutableStateOf("") }
+    var isAuthenticated by remember { mutableStateOf(false) }
+
+    var newMonthInput by remember { mutableStateOf("") }
+    var newDayInput by remember { mutableStateOf("") }
+
+    // Init values once profile loads
+    LaunchedEffect(userProfile, showProfileModal) {
+        userProfile?.let {
+            newMonthInput = it.birthMonth?.toString() ?: ""
+            newDayInput = it.birthDay?.toString() ?: ""
+            if (it.password == null || it.password.isEmpty()) {
+                isAuthenticated = true
+            } else {
+                isAuthenticated = false
+            }
+        }
+    }
 
     val calendar = Calendar.getInstance()
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
@@ -95,21 +121,42 @@ fun GreetingScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Date cluster
-            Column {
-                Text(
-                    text = weekdayString.uppercase(),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                    color = Color(0xFF3D3834).copy(alpha = 0.4f)
-                )
-                Text(
-                    text = dateString,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF3D3834).copy(alpha = 0.7f)
-                )
+            // Left Date cluster with Clickable Avatar Button
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                IconButton(
+                    onClick = { showProfileModal = true },
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.45f))
+                        .testTag("launch_profile_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Access Profile",
+                        tint = Color(0xFF3D3834).copy(alpha = 0.65f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = weekdayString.uppercase(),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        color = Color(0xFF3D3834).copy(alpha = 0.4f)
+                    )
+                    Text(
+                        text = dateString,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF3D3834).copy(alpha = 0.7f)
+                    )
+                }
             }
 
             // Right Streak Pill
@@ -255,6 +302,23 @@ fun GreetingScreen(
                             Icon(
                                 imageVector = Icons.Default.ContentCopy,
                                 contentDescription = "Copy Contemplation",
+                                tint = Color(0xFF3D3834).copy(alpha = 0.4f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        // Share Button (Beautifully creates nice image)
+                        IconButton(
+                            onClick = {
+                                shareQuoteAsImage(context, greetingText, categoryLabel)
+                            },
+                            modifier = Modifier
+                                .testTag("share_greeting_button")
+                                .size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share Contemplation",
                                 tint = Color(0xFF3D3834).copy(alpha = 0.4f),
                                 modifier = Modifier.size(18.dp)
                             )
@@ -573,7 +637,7 @@ fun GreetingScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (streak > 0) "✨" else "🌱",
+                        text = if (streak > 0) "🔥" else "🌱",
                         fontSize = 20.sp
                     )
                 }
@@ -673,6 +737,544 @@ fun GreetingScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ✦ INTERACTIVE CHAT BUDDY ✦
+        var emotionInputText by remember { mutableStateOf("") }
+        val coroutineScope = rememberCoroutineScope()
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+        // Sync scroll to end when new messages arrive
+        LaunchedEffect(emotionsList.size) {
+            if (emotionsList.isNotEmpty()) {
+                listState.animateScrollToItem(emotionsList.size - 1)
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White.copy(alpha = 0.35f))
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(24.dp)
+                )
+                .padding(18.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Header of Buddy Chat
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color(0xFFE0A7A7).copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🌸", fontSize = 16.sp)
+                    }
+                    Column {
+                        Text(
+                            text = "Lumee Chat Buddy",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF3D3834)
+                        )
+                        Text(
+                            text = "Share your raw emotions securely & locally",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFF3D3834).copy(alpha = 0.45f)
+                        )
+                    }
+                }
+
+                Divider(color = Color.White.copy(alpha = 0.4f), thickness = 0.8.dp)
+
+                // Dialog lists
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 100.dp, max = 220.dp)
+                        .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
+                        .padding(8.dp)
+                ) {
+                    if (emotionsList.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "How are you truly feeling right now?\nType below or select a mood chip...",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF3D3834).copy(alpha = 0.5f)
+                            )
+                        }
+                    } else {
+                        androidx.compose.foundation.lazy.LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(emotionsList) { msg ->
+                                val isUser = msg.sender == "USER"
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .widthIn(max = 240.dp)
+                                            .clip(
+                                                RoundedCornerShape(
+                                                    topStart = 16.dp,
+                                                    topEnd = 16.dp,
+                                                    bottomStart = if (isUser) 16.dp else 4.dp,
+                                                    bottomEnd = if (isUser) 4.dp else 16.dp
+                                                )
+                                            )
+                                            .background(
+                                                if (isUser) Color(0xFFE0A7A7).copy(alpha = 0.8f)
+                                                else Color.White.copy(alpha = 0.65f)
+                                            )
+                                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = msg.text,
+                                            fontSize = 13.sp,
+                                            color = if (isUser) Color.White else Color(0xFF3D3834)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Mood quick chips to tap
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val moodChips = listOf(
+                        "😔 Sad",
+                        "😰 Anxious",
+                        "😡 Angry",
+                        "😃 Happy"
+                    )
+                    moodChips.forEach { chipName ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White.copy(alpha = 0.4f))
+                                .clickable {
+                                    viewModel.sendEmotion("I am feeling $chipName right now.")
+                                }
+                                .border(0.6.dp, Color(0xFFE0A7A7).copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(text = chipName, fontSize = 11.sp, color = Color(0xFF8B5A5A))
+                        }
+                    }
+                }
+
+                // Type bar input field
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = emotionInputText,
+                        onValueChange = { emotionInputText = it },
+                        placeholder = { Text("Share an emotion...", fontSize = 13.sp) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White.copy(alpha = 0.45f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
+                            focusedBorderColor = Color(0xFFE0A7A7),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.4f)
+                        )
+                    )
+
+                    Button(
+                        onClick = {
+                            if (emotionInputText.trim().isNotEmpty()) {
+                                viewModel.sendEmotion(emotionInputText)
+                                emotionInputText = ""
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A7A7)),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.height(48.dp)
+                    ) {
+                        Text("Send", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    if (showProfileModal) {
+        Dialog(onDismissRequest = { 
+            showProfileModal = false
+            passwordInput = ""
+        }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(Color(0xFFFFF9F5))
+                    .border(1.6.dp, Color(0xFFE0A7A7), RoundedCornerShape(28.dp))
+                    .padding(22.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Your Private Sanctuary Profile",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF8B5A5A)
+                    )
+
+                    val savedPassword = userProfile?.password
+
+                    if (!isAuthenticated && savedPassword != null && savedPassword.isNotEmpty()) {
+                        // Password protection prompt
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "This profile is locked. Please enter your offline password to access your secure local recordings.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF3D3834).copy(alpha = 0.6f),
+                                textAlign = TextAlign.Center
+                            )
+
+                            OutlinedTextField(
+                                value = passwordInput,
+                                onValueChange = { passwordInput = it },
+                                label = { Text("Enter Password") },
+                                shape = RoundedCornerShape(14.dp),
+                                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFFE0A7A7),
+                                    unfocusedBorderColor = Color(0xFF3D3834).copy(alpha = 0.2f)
+                                )
+                            )
+
+                            Button(
+                                onClick = {
+                                    if (passwordInput == savedPassword) {
+                                        isAuthenticated = true
+                                    } else {
+                                        android.widget.Toast.makeText(context, "Incorrect Password", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A7A7)),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Text("Unlock Profile 🔑", color = Color.White)
+                            }
+                        }
+                    } else {
+                        // Authenticated details panel!
+                        val scrollState = rememberScrollState()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 380.dp)
+                                .verticalScroll(scrollState),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            // Birthday and Password Setup block
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.White.copy(alpha = 0.6f))
+                                    .padding(14.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text(
+                                        text = "Setup Credentials",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFF8B5A5A)
+                                    )
+
+                                    // Birthday inputs
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedTextField(
+                                            value = newMonthInput,
+                                            onValueChange = { newMonthInput = it.take(2) },
+                                            label = { Text("Birth Month", fontSize = 11.sp) },
+                                            placeholder = { Text("MM") },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFE0A7A7))
+                                        )
+                                        OutlinedTextField(
+                                            value = newDayInput,
+                                            onValueChange = { newDayInput = it.take(2) },
+                                            label = { Text("Birth Day", fontSize = 11.sp) },
+                                            placeholder = { Text("DD") },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFE0A7A7))
+                                        )
+                                    }
+
+                                    // Password setup
+                                    var plainPasswordInput by remember { mutableStateOf(savedPassword ?: "") }
+                                    OutlinedTextField(
+                                        value = plainPasswordInput,
+                                        onValueChange = { plainPasswordInput = it },
+                                        label = { Text("Set Offline Password") },
+                                        placeholder = { Text("Keep profile private") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFE0A7A7))
+                                    )
+
+                                    Button(
+                                        onClick = {
+                                            val m = newMonthInput.toIntOrNull()
+                                            val d = newDayInput.toIntOrNull()
+                                            viewModel.updateProfileBirthday(m, d)
+                                            viewModel.updatePassword(plainPasswordInput.ifEmpty { null })
+                                            android.widget.Toast.makeText(context, "Credentials Updated Successfully 🌸", android.widget.Toast.LENGTH_SHORT).show()
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A7A7)),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text("Save Settings", color = Color.White)
+                                    }
+                                }
+                            }
+
+                            // Emotions Recipient Panel
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Saved Emotions Activity",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFF8B5A5A)
+                                    )
+                                    if (emotionsList.isNotEmpty()) {
+                                        Text(
+                                            text = "Clear All",
+                                            fontSize = 11.sp,
+                                            color = Color(0xFF8B5A5A),
+                                            modifier = Modifier.clickable { viewModel.clearEmotionHistory() }
+                                        )
+                                    }
+                                }
+
+                                if (emotionsList.isEmpty()) {
+                                    Text(
+                                        text = "No saved emotions yet. Share your thoughts with the Chat Buddy below!",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF3D3834).copy(alpha = 0.5f),
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                } else {
+                                    val userEmotions = emotionsList.filter { it.sender == "USER" }
+                                    userEmotions.forEach { emotion ->
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(Color.White.copy(alpha = 0.5f))
+                                                .padding(10.dp)
+                                        ) {
+                                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                val dateText = remember(emotion.timestamp) {
+                                                    java.text.SimpleDateFormat("MMM dd, hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(emotion.timestamp))
+                                                }
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Text(
+                                                        text = dateText,
+                                                        fontSize = 10.sp,
+                                                        color = Color(0xFF3D3834).copy(alpha = 0.4f)
+                                                    )
+                                                    Text(
+                                                        text = "🔒 Secure",
+                                                        fontSize = 10.sp,
+                                                        color = Color(0xFFE0A7A7)
+                                                    )
+                                                }
+                                                Text(
+                                                    text = emotion.text,
+                                                    fontSize = 12.sp,
+                                                    color = Color(0xFF3D3834)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Button(
+                            onClick = { showProfileModal = false },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3D3834)),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("Return to Sanctuary", color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun shareQuoteAsImage(context: android.content.Context, quoteText: String, category: String) {
+    try {
+        // Create a bitmap
+        val width = 800
+        val height = 800
+        val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+        val cv = android.graphics.Canvas(bitmap)
+
+        // Draw a beautiful background. Let's make it a nice peach/pink pastel gradient card!
+        val bgPaint = android.graphics.Paint()
+        val gradient = android.graphics.LinearGradient(
+            0f, 0f, width.toFloat(), height.toFloat(),
+            android.graphics.Color.parseColor("#FFF9E8"), // Peach gold
+            android.graphics.Color.parseColor("#FBEBE6"), // Rose peach
+            android.graphics.Shader.TileMode.CLAMP
+        )
+        bgPaint.shader = gradient
+        cv.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+
+        // Draw border or corner highlights
+        val accentPaint = android.graphics.Paint().apply {
+            color = android.graphics.Color.parseColor("#E0A7A7")
+            style = android.graphics.Paint.Style.STROKE
+            strokeWidth = 12f
+            isAntiAlias = true
+        }
+        cv.drawRoundRect(20f, 20f, width.toFloat() - 20f, height.toFloat() - 20f, 40f, 40f, accentPaint)
+
+        // Draw decorative element
+        val decorPaint = android.graphics.Paint().apply {
+            color = android.graphics.Color.parseColor("#E0A7A7")
+            textSize = 60f
+            isAntiAlias = true
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        cv.drawText("✦", width / 2f, 130f, decorPaint)
+
+        // Category heading
+        val categoryPaint = android.graphics.Paint().apply {
+            color = android.graphics.Color.parseColor("#8B5A5A")
+            textSize = 30f
+            isAntiAlias = true
+            textAlign = android.graphics.Paint.Align.CENTER
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+        }
+        cv.drawText(category.uppercase(), width / 2f, 200f, categoryPaint)
+
+        // Draw a nice separator line
+        accentPaint.strokeWidth = 2f
+        accentPaint.color = android.graphics.Color.parseColor("#E0A7A7")
+        cv.drawLine(width / 2f - 80f, 240f, width / 2f + 80f, 240f, accentPaint)
+
+        // Text Paint for the quote (wrapped)
+        val textPaint = android.text.TextPaint().apply {
+            color = android.graphics.Color.parseColor("#3D3834")
+            textSize = 34f
+            isAntiAlias = true
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.ITALIC)
+        }
+
+        // Beautiful line-wrapping logic using StaticLayout or manual tokenizing
+        val quoteWithQuotes = "“$quoteText”"
+        val x = 85
+        val yStart = 290f
+        val textWidth = width - (x * 2)
+        
+        // Android StaticLayout is the ultimate text wrapper!
+        val staticLayout = if (android.os.Build.VERSION.SDK_INT >= 23) {
+            android.text.StaticLayout.Builder.obtain(quoteWithQuotes, 0, quoteWithQuotes.length, textPaint, textWidth)
+                .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
+                .setLineSpacing(12f, 1f)
+                .build()
+        } else {
+            @Suppress("DEPRECATION")
+            android.text.StaticLayout(
+                quoteWithQuotes, textPaint, textWidth,
+                android.text.Layout.Alignment.ALIGN_CENTER, 1f, 12f, false
+            )
+        }
+
+        cv.save()
+        cv.translate(x.toFloat(), yStart)
+        staticLayout.draw(cv)
+        cv.restore()
+
+        // Author name at the bottom
+        val authorPaint = android.graphics.Paint().apply {
+            color = android.graphics.Color.parseColor("#8B5A5A")
+            textSize = 30f
+            isAntiAlias = true
+            textAlign = android.graphics.Paint.Align.CENTER
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+        }
+        cv.drawText("— Lumee Sanctuary 🌸", width / 2f, height - 120f, authorPaint)
+
+        // Save to file
+        val shareDir = java.io.File(context.cacheDir, "shared_quotes")
+        shareDir.mkdirs()
+        val file = java.io.File(shareDir, "lumee_shared_quote.png")
+        java.io.FileOutputStream(file).use { fos ->
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, fos)
+        }
+
+        // Share via Intent
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+
+        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            putExtra(android.content.Intent.EXTRA_TEXT, "“$quoteText” — Shared from Lumee 🌸")
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(android.content.Intent.createChooser(shareIntent, "Share beautiful quote"))
+    } catch (e: Exception) {
+        e.printStackTrace()
+        android.widget.Toast.makeText(context, "Failed to create shareable image", android.widget.Toast.LENGTH_SHORT).show()
     }
 }

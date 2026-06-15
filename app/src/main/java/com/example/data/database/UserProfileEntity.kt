@@ -13,5 +13,6 @@ data class UserProfileEntity(
     val lastGreetingDate: String? = null, // yyyy-MM-dd
     val lastGreetingId: Int? = null,
     val completedToday: Boolean = false,
-    val preferredReminderTime: String? = "08:00"
+    val preferredReminderTime: String? = "08:00",
+    val password: String? = null
 )

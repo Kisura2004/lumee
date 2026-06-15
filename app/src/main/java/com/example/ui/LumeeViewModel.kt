@@ -19,6 +19,7 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
     // UI states
     val userProfile: StateFlow<UserProfileEntity?>
     val moments: StateFlow<List<MomentEntity>>
+    val emotions: StateFlow<List<com.example.data.database.EmotionEntity>>
     
     private val _todayGreeting = MutableStateFlow<Pair<String, String>?>(null)
     val todayGreeting: StateFlow<Pair<String, String>?> = _todayGreeting.asStateFlow()
@@ -38,11 +39,12 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
     private val _preferredBreathingTechnique = MutableStateFlow<String?>(null)
     val preferredBreathingTechnique: StateFlow<String?> = _preferredBreathingTechnique.asStateFlow()
 
-    enum class StartupGreetingType {
-        MORNING, EVENING
-    }
+    private val _activeColorPalette = MutableStateFlow("PEACH")
+    val activeColorPalette: StateFlow<String> = _activeColorPalette.asStateFlow()
 
-    private var hasCheckedStartupGreeting = false
+    enum class StartupGreetingType {
+        MORNING, EVENING, LATE_NIGHT
+    }
 
     private val _showStartupGreeting = MutableStateFlow<StartupGreetingType?>(null)
     val showStartupGreeting: StateFlow<StartupGreetingType?> = _showStartupGreeting.asStateFlow()
@@ -51,17 +53,33 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
         _showStartupGreeting.value = null
     }
 
+    fun setColorPalette(palette: String) {
+        _activeColorPalette.value = palette
+        val prefs = getApplication<Application>().getSharedPreferences("lumee_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("active_color_palette", palette).apply()
+    }
+
     fun checkAndTriggerStartupGreeting() {
-        if (hasCheckedStartupGreeting) return
-        hasCheckedStartupGreeting = true
         val calendar = Calendar.getInstance()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        if (hour in 5..11) {
-            _showStartupGreeting.value = StartupGreetingType.MORNING
-        } else if (hour >= 19 || hour < 5) {
-            _showStartupGreeting.value = StartupGreetingType.EVENING
-        } else {
-            _showStartupGreeting.value = null
+        val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(calendar.time)
+        val prefs = getApplication<Application>().getSharedPreferences("startup_greetings", android.content.Context.MODE_PRIVATE)
+
+        val targetType: StartupGreetingType? = when (hour) {
+            in 4..11 -> StartupGreetingType.MORNING
+            in 17..20 -> StartupGreetingType.EVENING
+            in 21..23 -> StartupGreetingType.LATE_NIGHT
+            in 0..3 -> StartupGreetingType.LATE_NIGHT
+            else -> null
+        }
+
+        if (targetType != null) {
+            val key = "last_greeting_${targetType.name}_$dateString"
+            val alreadyShown = prefs.getBoolean(key, false)
+            if (!alreadyShown) {
+                prefs.edit().putBoolean(key, true).apply()
+                _showStartupGreeting.value = targetType
+            }
         }
     }
 
@@ -129,6 +147,9 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
     init {
         val database = AppDatabase.getDatabase(application)
         repository = LumeeRepository(database.lumeeDao())
+
+        val prefs = application.getSharedPreferences("lumee_prefs", android.content.Context.MODE_PRIVATE)
+        _activeColorPalette.value = prefs.getString("active_color_palette", "PEACH") ?: "PEACH"
         
         userProfile = repository.userProfile.stateIn(
             scope = viewModelScope,
@@ -137,6 +158,12 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         moments = repository.moments.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        emotions = repository.emotions.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
@@ -211,5 +238,47 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
         val currentIndex = prompts.indexOf(_currentPrompt.value)
         val nextIndex = (currentIndex + 1) % prompts.size
         _currentPrompt.value = prompts[nextIndex]
+    }
+
+    fun sendEmotion(text: String, emotionType: String? = null) {
+        viewModelScope.launch {
+            if (text.trim().isEmpty()) return@launch
+            // Insert user emotion
+            repository.insertEmotion("USER", text, emotionType)
+            
+            // Craft a highly organic, warm, comforting and poetic response
+            val buddyResponse = when {
+                text.lowercase().contains("sad") || text.lowercase().contains("hurt") || text.lowercase().contains("cry") || text.lowercase().contains("grief") || text.lowercase().contains("lonely") -> {
+                    "I hear your sadness, friend. Remember that clouds are transient, yet the blue sky above them never leaves. Rest your head, you are completely safe here. 🌸"
+                }
+                text.lowercase().contains("angry") || text.lowercase().contains("mad") || text.lowercase().contains("hate") || text.lowercase().contains("annoyed") || text.lowercase().contains("furious") -> {
+                    "It is natural to feel a storm inside sometimes. Let the fire breathe without burning you. I am here sitting next to you in peace. 🍃"
+                }
+                text.lowercase().contains("happy") || text.lowercase().contains("glad") || text.lowercase().contains("joy") || text.lowercase().contains("excited") || text.lowercase().contains("great") -> {
+                    "Your joy warms my heart like beautiful sunbeams. Let us cherish this light and store it gently in our souls. ✨"
+                }
+                text.lowercase().contains("anxious") || text.lowercase().contains("scared") || text.lowercase().contains("fear") || text.lowercase().contains("stress") || text.lowercase().contains("worry") -> {
+                    "Exhale slowly... inhale peace. The present moment is small and safe. You do not have to carry tomorrow's weight today. 🌊"
+                }
+                else -> {
+                    "Thank you for sharing your heart with me. Every emotion is a guest passing through. Let us sit together in pure acceptance. 🕊️"
+                }
+            }
+            // Add buddy response slightly after for that sweet realistic response effect
+            kotlinx.coroutines.delay(600)
+            repository.insertEmotion("BUDDY", buddyResponse, null)
+        }
+    }
+
+    fun clearEmotionHistory() {
+        viewModelScope.launch {
+            repository.clearEmotions()
+        }
+    }
+
+    fun updatePassword(password: String?) {
+        viewModelScope.launch {
+            repository.updateProfilePassword(password)
+        }
     }
 }
