@@ -41,8 +41,6 @@ fun SettingsScreen(
     val calendar = Calendar.getInstance()
 
     var nameInput by remember { mutableStateOf("") }
-    var birthMonthInput by remember { mutableStateOf("") }
-    var birthDayInput by remember { mutableStateOf("") }
 
     var reminderEnabled by remember { mutableStateOf(false) }
     var reminderHour by remember { mutableStateOf("08") }
@@ -55,8 +53,6 @@ fun SettingsScreen(
     LaunchedEffect(userProfile) {
         userProfile?.let {
             nameInput = it.name
-            birthMonthInput = it.birthMonth?.toString() ?: ""
-            birthDayInput = it.birthDay?.toString() ?: ""
 
             val time = it.preferredReminderTime
             reminderEnabled = (time != null)
@@ -158,109 +154,10 @@ fun SettingsScreen(
                         unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
                         focusedBorderColor = Color(0xFFE0A7A7),
                         unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                        focusedTextColor = Color(0xFF3D3834),
-                        unfocusedTextColor = Color(0xFF3D3834)
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black
                     )
                 )
-
-                HorizontalDivider(color = Color.White.copy(alpha = 0.5f))
-
-                // Birthday Inputs - Sincere birthday blessing triggers
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFFE0A7A7).copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Cake,
-                            contentDescription = "Birthday trigger details",
-                            tint = Color(0xFFE0A7A7),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Text(
-                        text = "Sincere Birthday Experience",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFF3D3834)
-                    )
-                }
-
-                Text(
-                    text = "If provided, Lumee will offer a sincere, thoughtful morning greeting on your special day.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF3D3834).copy(alpha = 0.6f)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = birthMonthInput,
-                        onValueChange = {
-                            val filtered = it.filter { char -> char.isDigit() }
-                            val month = filtered.toIntOrNull()
-                            if (month == null || month in 1..12) {
-                                birthMonthInput = filtered
-                                viewModel.updateProfileBirthday(
-                                    month = month,
-                                    day = birthDayInput.toIntOrNull()
-                                )
-                            }
-                        },
-                        label = { Text("Month (1-12)") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("settings_birthday_month_input"),
-                        shape = RoundedCornerShape(14.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White.copy(alpha = 0.4f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
-                            focusedBorderColor = Color(0xFFE0A7A7),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                            focusedTextColor = Color(0xFF3D3834),
-                            unfocusedTextColor = Color(0xFF3D3834)
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = birthDayInput,
-                        onValueChange = {
-                            val filtered = it.filter { char -> char.isDigit() }
-                            val day = filtered.toIntOrNull()
-                            if (day == null || day in 1..31) {
-                                birthDayInput = filtered
-                                viewModel.updateProfileBirthday(
-                                    month = birthMonthInput.toIntOrNull(),
-                                    day = day
-                                )
-                            }
-                        },
-                        label = { Text("Day (1-31)") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("settings_birthday_day_input"),
-                        shape = RoundedCornerShape(14.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White.copy(alpha = 0.4f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
-                            focusedBorderColor = Color(0xFFE0A7A7),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                            focusedTextColor = Color(0xFF3D3834),
-                            unfocusedTextColor = Color(0xFF3D3834)
-                        )
-                    )
-                }
             }
         }
 
@@ -369,8 +266,8 @@ fun SettingsScreen(
                                 unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
                                 focusedBorderColor = Color(0xFFE0A7A7),
                                 unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                                focusedTextColor = Color(0xFF3D3834),
-                                unfocusedTextColor = Color(0xFF3D3834)
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black
                             )
                         )
 
@@ -400,8 +297,8 @@ fun SettingsScreen(
                                 unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
                                 focusedBorderColor = Color(0xFFE0A7A7),
                                 unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                                focusedTextColor = Color(0xFF3D3834),
-                                unfocusedTextColor = Color(0xFF3D3834)
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black
                             )
                         )
                     }
@@ -411,44 +308,10 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Morning Wakeup & Evening Motivation Card
+        // Automatic Daily Sanctuary Notifications Card
         var morningWakeupEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("morning_wakeup_enabled", true)) }
-        var morningHour by remember {
-            val fullTime = sharedPrefs.getString("morning_wakeup_time", "07:00") ?: "07:00"
-            mutableStateOf(fullTime.split(":")[0])
-        }
-        var morningMinute by remember {
-            val fullTime = sharedPrefs.getString("morning_wakeup_time", "07:00") ?: "07:00"
-            mutableStateOf(fullTime.split(":")[1])
-        }
-
         var eveningMotivationEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("evening_motivation_enabled", true)) }
-        var eveningHour by remember {
-            val fullTime = sharedPrefs.getString("evening_motivation_time", "21:30") ?: "21:30"
-            mutableStateOf(fullTime.split(":")[0])
-        }
-        var eveningMinute by remember {
-            val fullTime = sharedPrefs.getString("evening_motivation_time", "21:30") ?: "21:30"
-            mutableStateOf(fullTime.split(":")[1])
-        }
-
-        fun saveMorningTime(hr: String, min: String) {
-            val cleanHr = hr.ifEmpty { "07" }.padStart(2, '0')
-            val cleanMin = min.ifEmpty { "00" }.padStart(2, '0')
-            sharedPrefs.edit()
-                .putString("morning_wakeup_time", "$cleanHr:$cleanMin")
-                .apply()
-            com.example.receiver.NotificationScheduler.scheduleNextNotification(context)
-        }
-
-        fun saveEveningTime(hr: String, min: String) {
-            val cleanHr = hr.ifEmpty { "21" }.padStart(2, '0')
-            val cleanMin = min.ifEmpty { "30" }.padStart(2, '0')
-            sharedPrefs.edit()
-                .putString("evening_motivation_time", "$cleanHr:$cleanMin")
-                .apply()
-            com.example.receiver.NotificationScheduler.scheduleNextNotification(context)
-        }
+        var nightMotivationEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("night_motivation_enabled", true)) }
 
         Box(
             modifier = Modifier
@@ -492,26 +355,27 @@ fun SettingsScreen(
                 }
 
                 Text(
-                    text = "Configure specific early morning greetings and late-night motivation reflection cards.",
+                    text = "Configure specific early morning greetings, evening motivations, and late-night reflection cards. Lumee automatically schedules these moments of peace to align with your natural rhythm.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF3D3834).copy(alpha = 0.6f)
                 )
 
-                HorizontalDivider(color = Color.White.copy(alpha = 0.4f))
+                HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
 
+                // Morning wakeup toggle
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Morning Wakeup 🌅",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                             color = Color(0xFF3D3834)
                         )
                         Text(
-                            text = "Early checkups with uplifting morning ideas.",
+                            text = "Daily checkups with uplifting morning ideas at 08:30 AM.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF3D3834).copy(alpha = 0.5f)
                         )
@@ -533,78 +397,22 @@ fun SettingsScreen(
                     )
                 }
 
-                if (morningWakeupEnabled) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = morningHour,
-                            onValueChange = { input ->
-                                val filtered = input.filter { char -> char.isDigit() }
-                                val hr = filtered.toIntOrNull()
-                                if (hr == null || hr in 0..23) {
-                                    morningHour = filtered
-                                    saveMorningTime(filtered, morningMinute)
-                                }
-                            },
-                            label = { Text("Hour (0-23)") },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(14.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White.copy(alpha = 0.4f),
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
-                                focusedBorderColor = Color(0xFFE0A7A7),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                                focusedTextColor = Color(0xFF3D3834),
-                                unfocusedTextColor = Color(0xFF3D3834)
-                            )
-                        )
+                HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
 
-                        OutlinedTextField(
-                            value = morningMinute,
-                            onValueChange = { input ->
-                                val filtered = input.filter { char -> char.isDigit() }
-                                val min = filtered.toIntOrNull()
-                                if (min == null || min in 0..59) {
-                                    morningMinute = filtered
-                                    saveMorningTime(morningHour, filtered)
-                                }
-                            },
-                            label = { Text("Minute (0-59)") },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(14.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White.copy(alpha = 0.4f),
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
-                                focusedBorderColor = Color(0xFFE0A7A7),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                                focusedTextColor = Color(0xFF3D3834),
-                                unfocusedTextColor = Color(0xFF3D3834)
-                            )
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = Color.White.copy(alpha = 0.4f))
-
+                // Evening motivation toggle
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Evening Motivation 🌌",
+                            text = "Evening Calm 🧘",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                             color = Color(0xFF3D3834)
                         )
                         Text(
-                            text = "Late night motivation and soothing quotes.",
+                            text = "Relaxing evening calm and soothing motivation at 06:30 PM.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF3D3834).copy(alpha = 0.5f)
                         )
@@ -626,61 +434,41 @@ fun SettingsScreen(
                     )
                 }
 
-                if (eveningMotivationEnabled) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = eveningHour,
-                            onValueChange = { input ->
-                                val filtered = input.filter { char -> char.isDigit() }
-                                val hr = filtered.toIntOrNull()
-                                if (hr == null || hr in 0..23) {
-                                    eveningHour = filtered
-                                    saveEveningTime(filtered, eveningMinute)
-                                }
-                            },
-                            label = { Text("Hour (0-23)") },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(14.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White.copy(alpha = 0.4f),
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
-                                focusedBorderColor = Color(0xFFE0A7A7),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                                focusedTextColor = Color(0xFF3D3834),
-                                unfocusedTextColor = Color(0xFF3D3834)
-                            )
-                        )
+                HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
 
-                        OutlinedTextField(
-                            value = eveningMinute,
-                            onValueChange = { input ->
-                                val filtered = input.filter { char -> char.isDigit() }
-                                val min = filtered.toIntOrNull()
-                                if (min == null || min in 0..59) {
-                                    eveningMinute = filtered
-                                    saveEveningTime(eveningHour, filtered)
-                                }
-                            },
-                            label = { Text("Minute (0-59)") },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(14.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White.copy(alpha = 0.4f),
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
-                                focusedBorderColor = Color(0xFFE0A7A7),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                                focusedTextColor = Color(0xFF3D3834),
-                                unfocusedTextColor = Color(0xFF3D3834)
-                            )
+                // Night motivation toggle
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Night Reflection 🌌",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF3D3834)
+                        )
+                        Text(
+                            text = "Bedtime comfort notes and tranquil deep sleep cues at 09:30 PM.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF3D3834).copy(alpha = 0.5f)
                         )
                     }
+
+                    Switch(
+                        checked = nightMotivationEnabled,
+                        onCheckedChange = { isChecked ->
+                            nightMotivationEnabled = isChecked
+                            sharedPrefs.edit().putBoolean("night_motivation_enabled", isChecked).apply()
+                            com.example.receiver.NotificationScheduler.scheduleNextNotification(context)
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFFE0A7A7),
+                            uncheckedThumbColor = Color(0xFF3D3834).copy(alpha = 0.4f),
+                            uncheckedTrackColor = Color.White.copy(alpha = 0.3f)
+                        )
+                    )
                 }
             }
         }

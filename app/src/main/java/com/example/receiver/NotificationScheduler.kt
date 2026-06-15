@@ -105,9 +105,13 @@ object NotificationScheduler {
 
             val prefs = context.getSharedPreferences("lumee_prefs", Context.MODE_PRIVATE)
             val isMorningEnabled = prefs.getBoolean("morning_wakeup_enabled", true)
-            val morningTime = prefs.getString("morning_wakeup_time", "07:00") ?: "07:00"
             val isEveningEnabled = prefs.getBoolean("evening_motivation_enabled", true)
-            val eveningTime = prefs.getString("evening_motivation_time", "21:30") ?: "21:30"
+            val isNightEnabled = prefs.getBoolean("night_motivation_enabled", true)
+
+            // Dynamic but pre-determined peaceful greeting times decided by Lumee
+            val morningTime = "08:30"
+            val eveningTime = "18:30"
+            val nightTime = "21:30"
 
             // 1. Preferred Reminder
             if (preferredReminderTime != null) {
@@ -129,6 +133,13 @@ object NotificationScheduler {
             } else {
                 cancelAlarm(context, 1003, "EVENING")
             }
+
+            // 4. Night Motivation
+            if (isNightEnabled) {
+                scheduleAlarm(context, 1004, nightTime, "EVENING")
+            } else {
+                cancelAlarm(context, 1004, "EVENING")
+            }
         }
     }
 
@@ -136,5 +147,6 @@ object NotificationScheduler {
         cancelAlarm(context, 1001, "PREFERRED")
         cancelAlarm(context, 1002, "MORNING")
         cancelAlarm(context, 1003, "EVENING")
+        cancelAlarm(context, 1004, "EVENING")
     }
 }

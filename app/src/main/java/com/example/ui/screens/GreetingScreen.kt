@@ -77,12 +77,16 @@ fun GreetingScreen(
 
     var newMonthInput by remember { mutableStateOf("") }
     var newDayInput by remember { mutableStateOf("") }
+    var newNameInput by remember { mutableStateOf("") }
+    var plainPasswordInput by remember { mutableStateOf("") }
 
     // Init values once profile loads
     LaunchedEffect(userProfile, showProfileModal) {
         userProfile?.let {
             newMonthInput = it.birthMonth?.toString() ?: ""
             newDayInput = it.birthDay?.toString() ?: ""
+            newNameInput = it.name
+            plainPasswordInput = it.password ?: ""
             if (it.password == null || it.password.isEmpty()) {
                 isAuthenticated = true
             } else {
@@ -902,7 +906,9 @@ fun GreetingScreen(
                             focusedContainerColor = Color.White.copy(alpha = 0.45f),
                             unfocusedContainerColor = Color.White.copy(alpha = 0.25f),
                             focusedBorderColor = Color(0xFFE0A7A7),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.4f)
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
                         )
                     )
 
@@ -976,7 +982,9 @@ fun GreetingScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = Color(0xFFE0A7A7),
-                                    unfocusedBorderColor = Color(0xFF3D3834).copy(alpha = 0.2f)
+                                    unfocusedBorderColor = Color(0xFF3D3834).copy(alpha = 0.2f),
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black
                                 )
                             )
 
@@ -1005,7 +1013,7 @@ fun GreetingScreen(
                                 .verticalScroll(scrollState),
                             verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            // Birthday and Password Setup block
+                            // Birthday, Name, and Password Setup block
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1015,9 +1023,24 @@ fun GreetingScreen(
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                     Text(
-                                        text = "Setup Credentials",
+                                        text = "Your Personal Identity 🌸",
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                         color = Color(0xFF8B5A5A)
+                                    )
+
+                                    // Name input
+                                    OutlinedTextField(
+                                        value = newNameInput,
+                                        onValueChange = { newNameInput = it },
+                                        label = { Text("What should Lumee call you?", fontSize = 11.sp) },
+                                        placeholder = { Text("Friend") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = Color(0xFFE0A7A7),
+                                            focusedTextColor = Color.Black,
+                                            unfocusedTextColor = Color.Black
+                                        )
                                     )
 
                                     // Birthday inputs
@@ -1025,53 +1048,65 @@ fun GreetingScreen(
                                         OutlinedTextField(
                                             value = newMonthInput,
                                             onValueChange = { newMonthInput = it.take(2) },
-                                            label = { Text("Birth Month", fontSize = 11.sp) },
+                                            label = { Text("Birth Month (1-12)", fontSize = 11.sp) },
                                             placeholder = { Text("MM") },
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(10.dp),
-                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFE0A7A7))
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = Color(0xFFE0A7A7),
+                                                focusedTextColor = Color.Black,
+                                                unfocusedTextColor = Color.Black
+                                            )
                                         )
                                         OutlinedTextField(
                                             value = newDayInput,
                                             onValueChange = { newDayInput = it.take(2) },
-                                            label = { Text("Birth Day", fontSize = 11.sp) },
+                                            label = { Text("Birth Day (1-31)", fontSize = 11.sp) },
                                             placeholder = { Text("DD") },
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(10.dp),
-                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFE0A7A7))
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = Color(0xFFE0A7A7),
+                                                focusedTextColor = Color.Black,
+                                                unfocusedTextColor = Color.Black
+                                            )
                                         )
                                     }
 
                                     // Password setup
-                                    var plainPasswordInput by remember { mutableStateOf(savedPassword ?: "") }
                                     OutlinedTextField(
                                         value = plainPasswordInput,
                                         onValueChange = { plainPasswordInput = it },
-                                        label = { Text("Set Offline Password") },
-                                        placeholder = { Text("Keep profile private") },
+                                        label = { Text("Set Offline Profile Password", fontSize = 11.sp) },
+                                        placeholder = { Text("Keep your sanctuary private") },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(10.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFE0A7A7))
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = Color(0xFFE0A7A7),
+                                            focusedTextColor = Color.Black,
+                                            unfocusedTextColor = Color.Black
+                                        )
                                     )
 
                                     Button(
                                         onClick = {
                                             val m = newMonthInput.toIntOrNull()
                                             val d = newDayInput.toIntOrNull()
+                                            viewModel.updateProfileName(newNameInput.ifEmpty { "Friend" })
                                             viewModel.updateProfileBirthday(m, d)
                                             viewModel.updatePassword(plainPasswordInput.ifEmpty { null })
-                                            android.widget.Toast.makeText(context, "Credentials Updated Successfully 🌸", android.widget.Toast.LENGTH_SHORT).show()
+                                            android.widget.Toast.makeText(context, "Identity Updated Successfully 🌸", android.widget.Toast.LENGTH_SHORT).show()
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A7A7)),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Save Settings", color = Color.White)
+                                        Text("Save Sincere Identity", color = Color.White)
                                     }
                                 }
                             }
 
-                            // Emotions Recipient Panel
+                            // Emotions & Chat Buddy Responses Recipient Panel
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1079,13 +1114,13 @@ fun GreetingScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Saved Emotions Activity",
+                                        text = "Saved Emotions & Buddy Chats",
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                         color = Color(0xFF8B5A5A)
                                     )
                                     if (emotionsList.isNotEmpty()) {
                                         Text(
-                                            text = "Clear All",
+                                            text = "Clear Chats",
                                             fontSize = 11.sp,
                                             color = Color(0xFF8B5A5A),
                                             modifier = Modifier.clickable { viewModel.clearEmotionHistory() }
@@ -1095,19 +1130,36 @@ fun GreetingScreen(
 
                                 if (emotionsList.isEmpty()) {
                                     Text(
-                                        text = "No saved emotions yet. Share your thoughts with the Chat Buddy below!",
+                                        text = "No saved emotion chats yet. Connect with your chat buddy below!",
                                         fontSize = 12.sp,
                                         color = Color(0xFF3D3834).copy(alpha = 0.5f),
                                         modifier = Modifier.padding(vertical = 8.dp)
                                     )
                                 } else {
-                                    val userEmotions = emotionsList.filter { it.sender == "USER" }
-                                    userEmotions.forEach { emotion ->
+                                    emotionsList.forEach { emotion ->
+                                        val isUser = emotion.sender == "USER"
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(Color.White.copy(alpha = 0.5f))
+                                                .padding(
+                                                    start = if (isUser) 0.dp else 16.dp,
+                                                    end = if (isUser) 16.dp else 0.dp
+                                                )
+                                                .clip(RoundedCornerShape(
+                                                    topStart = 16.dp, 
+                                                    topEnd = 16.dp, 
+                                                    bottomStart = if (isUser) 16.dp else 4.dp, 
+                                                    bottomEnd = if (isUser) 4.dp else 16.dp
+                                                ))
+                                                .background(
+                                                    if (isUser) Color.White.copy(alpha = 0.5f) 
+                                                    else Color(0xFFE0A7A7).copy(alpha = 0.15f)
+                                                )
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = if (isUser) Color.Transparent else Color(0xFFE0A7A7).copy(alpha = 0.2f),
+                                                    shape = RoundedCornerShape(16.dp)
+                                                )
                                                 .padding(10.dp)
                                         ) {
                                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1119,14 +1171,15 @@ fun GreetingScreen(
                                                     horizontalArrangement = Arrangement.SpaceBetween
                                                 ) {
                                                     Text(
-                                                        text = dateText,
-                                                        fontSize = 10.sp,
-                                                        color = Color(0xFF3D3834).copy(alpha = 0.4f)
+                                                        text = if (isUser) "You 👤" else "Lumee 🌸",
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isUser) Color(0xFF3D3834) else Color(0xFF8B5A5A)
                                                     )
                                                     Text(
-                                                        text = "🔒 Secure",
-                                                        fontSize = 10.sp,
-                                                        color = Color(0xFFE0A7A7)
+                                                        text = dateText,
+                                                        fontSize = 9.sp,
+                                                        color = Color(0xFF3D3834).copy(alpha = 0.4f)
                                                     )
                                                 }
                                                 Text(

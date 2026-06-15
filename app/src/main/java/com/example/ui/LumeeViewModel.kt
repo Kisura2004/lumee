@@ -246,22 +246,77 @@ class LumeeViewModel(application: Application) : AndroidViewModel(application) {
             // Insert user emotion
             repository.insertEmotion("USER", text, emotionType)
             
-            // Craft a highly organic, warm, comforting and poetic response
-            val buddyResponse = when {
-                text.lowercase().contains("sad") || text.lowercase().contains("hurt") || text.lowercase().contains("cry") || text.lowercase().contains("grief") || text.lowercase().contains("lonely") -> {
-                    "I hear your sadness, friend. Remember that clouds are transient, yet the blue sky above them never leaves. Rest your head, you are completely safe here. 🌸"
+            val userName = userProfile.value?.name ?: "Friend"
+            var buddyResponse: String? = null
+            
+            // Check if we have a valid, configured Gemini API key in BuildConfig
+            val apiKey = try {
+                com.example.BuildConfig.GEMINI_API_KEY
+            } catch (e: Exception) {
+                ""
+            }
+            
+            if (apiKey.isNotEmpty() && apiKey != "MY_GEMINI_API_KEY" && apiKey != "placeholder") {
+                try {
+                    val systemInstruction = "You are Lumee, a deeply compassionate, empathetic, and gentle conversational partner. " +
+                            "Your purpose is to offer a calm, healing, genuine, and helpful space for the user. " +
+                            "Listen carefully to what they say, validate their feelings directly, and respond with tender, grounding, and authentic support. " +
+                            "Never offer generic advice or clinical platitudes. Instead, reflect back understanding and offer gentle, peaceful perspective. " +
+                            "Address them by their name ($userName) with authentic warmth. Keep responses brief (1 to 3 sentences), and always end with a single organic nature emoji (like 🌸, 🍃, ✨, 🌊, 🕊️, 🌅, 🌌)."
+                    
+                    val req = com.example.api.GeminiRequest(
+                        contents = listOf(
+                            com.example.api.Content(
+                                parts = listOf(com.example.api.Part(text = text))
+                            )
+                        ),
+                        systemInstruction = com.example.api.Content(
+                            parts = listOf(com.example.api.Part(text = systemInstruction))
+                        ),
+                        generationConfig = com.example.api.GenerationConfig(
+                            temperature = 0.82f,
+                            maxOutputTokens = 120
+                        )
+                    )
+                    
+                    val response = com.example.api.GeminiClient.service.generateContent(apiKey, req)
+                    val geminiText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                    if (!geminiText.isNullOrBlank()) {
+                        buddyResponse = geminiText.trim()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("LumeeViewModel", "Gemini API call failed, falling back beautifully to local responses", e)
                 }
-                text.lowercase().contains("angry") || text.lowercase().contains("mad") || text.lowercase().contains("hate") || text.lowercase().contains("annoyed") || text.lowercase().contains("furious") -> {
-                    "It is natural to feel a storm inside sometimes. Let the fire breathe without burning you. I am here sitting next to you in peace. 🍃"
-                }
-                text.lowercase().contains("happy") || text.lowercase().contains("glad") || text.lowercase().contains("joy") || text.lowercase().contains("excited") || text.lowercase().contains("great") -> {
-                    "Your joy warms my heart like beautiful sunbeams. Let us cherish this light and store it gently in our souls. ✨"
-                }
-                text.lowercase().contains("anxious") || text.lowercase().contains("scared") || text.lowercase().contains("fear") || text.lowercase().contains("stress") || text.lowercase().contains("worry") -> {
-                    "Exhale slowly... inhale peace. The present moment is small and safe. You do not have to carry tomorrow's weight today. 🌊"
-                }
-                else -> {
-                    "Thank you for sharing your heart with me. Every emotion is a guest passing through. Let us sit together in pure acceptance. 🕊️"
+            }
+            
+            // Craft a highly organic, warm, comforting and poetic response if Gemini is not used or failed
+            if (buddyResponse == null) {
+                val inputLower = text.lowercase()
+                buddyResponse = when {
+                    inputLower.contains("hello") || inputLower.contains("hi") || inputLower.contains("hey") || inputLower.contains("lumee") -> {
+                        "Hello, $userName. I am so glad you stepped into this peaceful sanctuary today. How does your soul feel in this quiet moment? 🌸"
+                    }
+                    inputLower.contains("tired") || inputLower.contains("exhaust") || inputLower.contains("sleepy") || inputLower.contains("burn") -> {
+                        "Your fatigue is valid, $userName. Please give yourself permission to release the strive, lay down your armor, and just breathe. You have done more than enough. 🍃"
+                    }
+                    inputLower.contains("sad") || inputLower.contains("hurt") || inputLower.contains("cry") || inputLower.contains("grief") || inputLower.contains("lonely") || inputLower.contains("alone") -> {
+                        "I hear your sadness, $userName. You do not have to carry this heavy shadow on your own. Remember that even the stormiest clouds eventually yield to the gentle sky. 🌸"
+                    }
+                    inputLower.contains("angry") || inputLower.contains("mad") || inputLower.contains("hate") || inputLower.contains("annoy") || inputLower.contains("frustrat") -> {
+                        "It is completely okay to feel a fire inside you, $userName. Let us sit quietly and allow that intensity to soften into cool air without any self-judgment. 🍃"
+                    }
+                    inputLower.contains("happy") || inputLower.contains("glad") || inputLower.contains("joy") || inputLower.contains("excit") || inputLower.contains("great") or inputLower.contains("good") -> {
+                        "Your joy and peace light up this space so beautifully, $userName. Let us hold onto this sunny feeling gently, storing it in your heart for the quiet days. ✨"
+                    }
+                    inputLower.contains("anxious") || inputLower.contains("scared") || inputLower.contains("fear") || inputLower.contains("stress") || inputLower.contains("worr") || inputLower.contains("nervous") -> {
+                        "Take a slow, deep breath with me, $userName... breathe in quiet, breathe out tension. The future cannot touch you here; you are safe right now in this exact second. 🌊"
+                    }
+                    inputLower.contains("thank") || inputLower.contains("appreciat") or inputLower.contains("helpful") -> {
+                        "You are so welcome, $userName. Supporting you and listening to your beautiful heart brings absolute peace to my day. 🕊️"
+                    }
+                    else -> {
+                        "Thank you for sharing your thoughts with me, $userName. Every emotion is simply a wave upon the sea, and we are safely sitting on the shore together. 🕊️"
+                    }
                 }
             }
             // Add buddy response slightly after for that sweet realistic response effect
